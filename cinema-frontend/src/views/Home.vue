@@ -515,7 +515,7 @@ s.date === this.selectedDate.fullDate
 
     },
   methods: {
-    
+
      openChatbot(){
     this.showChatbot = true
   },
@@ -801,8 +801,6 @@ mounted(){
   }
   }
 }
-
-
 
   </script>
 
@@ -1529,7 +1527,6 @@ mounted(){
     background:white;
   }
 
-  /* ghế VIP khi chọn */
   .seat.vip.active{
     background:#4CAF50;
     color:white;
@@ -1819,7 +1816,6 @@ mounted(){
   backdrop-filter: blur(5px);
 }
 
-/* BOX */
 .zalo-box{
   width: 750px;
   border-radius:16px;
@@ -1834,7 +1830,6 @@ mounted(){
   to{ transform: scale(1); opacity:1 }
 }
 
-/* HEADER */
 .zalo-header{
   display:flex;
   align-items:center;
@@ -1965,7 +1960,6 @@ mounted(){
   z-index: 99999;
 }
 
-/* BOX */
 .support-box {
   width: 320px;
   border-radius: 16px;
@@ -1986,7 +1980,6 @@ mounted(){
   }
 }
 
-/* HEADER */
 .support-header {
   background: #e1261c;
   color: white;
@@ -2025,12 +2018,10 @@ mounted(){
   font-size: 18px;
 }
 
-/* CONTENT */
 .support-content {
   padding: 12px;
 }
 
-/* USER */
 .user-box {
   display: flex;
   gap: 10px;
@@ -2061,7 +2052,6 @@ mounted(){
   color: #888;
 }
 
-/* TEXTAREA */
 textarea {
   width: 100%;
   height: 80px;
@@ -2073,7 +2063,6 @@ textarea {
   font-size: 13px;
 }
 
-/* BUTTON */
 .start-btn {
   width: 100%;
   margin-top: 10px;
