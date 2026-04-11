@@ -52,6 +52,7 @@ Route::post('/showtimes', [ShowtimeController::class,'store']);
 Route::put('/showtimes/{id}', [ShowtimeController::class,'update']);
 Route::delete('/showtimes/{id}', [ShowtimeController::class,'destroy']);
 Route::get('/movies/{id}', [MovieController::class, 'show']);
+Route::post('/chatbot', [ChatbotController::class, 'chat']);
 Route::prefix('admin')->group(function () {
 
 

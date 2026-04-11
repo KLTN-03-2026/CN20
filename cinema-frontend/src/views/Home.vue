@@ -1,8 +1,6 @@
   <template>
 
       <div class="container">
-
-        <!-- Banner -->
         <div class="main-banner">
           <button class="nav left" @click="prevSlide">❮</button>
           <img :src="slides[index]" class="big-image" />
@@ -319,7 +317,6 @@ Tổng tiền: {{ totalPrice.toLocaleString() }} VND
   </div>
   </div>
 
-<!-- CONTACT BUTTON -->
 <div class="contact-box">
   <button class="contact-btn" @click="open = !open">Liên hệ</button>
 
@@ -339,7 +336,6 @@ Tổng tiền: {{ totalPrice.toLocaleString() }} VND
   </div>
 </div>
 
-<!-- ZALO MODAL -->
 <div v-if="showZalo" class="zalo-modal" @click.self="showZalo = false">
   <div class="zalo-box">
 
@@ -411,13 +407,21 @@ Tổng tiền: {{ totalPrice.toLocaleString() }} VND
     </div>
 </div>
 
-      <!-- TEXTAREA -->
-      <textarea placeholder="Tin nhắn"></textarea>
+     <div class="chat-box">
+  <div
+    v-for="(msg, index) in messages"
+    :key="index"
+    :class="msg.role === 'user' ? 'msg user' : 'msg bot'"
+  >
+    {{ msg.text }}
+  </div>
+</div>
 
-      <!-- BUTTON -->
-      <button class="start-btn">
-        ▶ BẮT ĐẦU TRÒ CHUYỆN
-      </button>
+<input v-model="userMessage" placeholder="Nhập tin nhắn..." />
+
+<button @click="sendMessage">
+  Gửi
+</button>
 
     </div>
 
@@ -464,6 +468,8 @@ Tổng tiền: {{ totalPrice.toLocaleString() }} VND
         showZalo: false,
         open: false,
         showChatbot: false,
+        userMessage: "",
+        messages: []
       }
     },
 
@@ -515,6 +521,34 @@ s.date === this.selectedDate.fullDate
 
     },
   methods: {
+    async sendMessage() {
+
+  if (!this.userMessage) return
+
+  this.messages.push({
+    role: "user",
+    text: this.userMessage
+  })
+
+  const res = await fetch("http://127.0.0.1:8000/api/chatbot", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      message: this.userMessage
+    })
+  })
+
+  const data = await res.json()
+
+  this.messages.push({
+    role: "bot",
+    text: data.reply
+  })
+
+  this.userMessage = ""
+},
 
      openChatbot(){
     this.showChatbot = true
