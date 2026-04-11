@@ -36,9 +36,16 @@
             <div class="form-group">
               <label>Giới Tính</label>
               <div class="gender-group">
-                <label><input type="radio" value="Nam" v-model="user.gender"/> Nam</label>
-                <label><input type="radio" value="Nữ" v-model="user.gender"/> Nữ</label>
-              </div>
+                <label class="gender-item">
+                    <span>Nam</span>
+                    <input type="radio" value="Nam" v-model="user.gender"/>
+                </label>
+
+                <label class="gender-item">
+                    <span>Nữ</span>
+                    <input type="radio" value="Nữ" v-model="user.gender"/>
+                </label>
+                </div>
             </div>
 
             <div class="form-group">
@@ -64,7 +71,9 @@
             <div class="form-group">
               <label>Thành Phố</label>
               <select v-model="user.city">
-                <option value="Đà Nẵng">Đà Nẵng</option>
+                 <option>Đà Nẵng</option>
+                <option>Hà Nội</option>
+                <option>Hồ Chí Minh</option>
               </select>
             </div>
 
@@ -141,7 +150,7 @@
 
           <div class="ticket-card" v-for="t in tickets" :key="t.id">
               <div class="ticket-poster">
-            <img 
+            <img
               :src="getPoster(t.poster)"
               @error="handleImgError"
             />
@@ -188,14 +197,26 @@ export default {
     }
   },
 
-  mounted(){
-    const u = JSON.parse(localStorage.getItem('currentUser'))
-    if(u){
-      fetch(`http://127.0.0.1:8000/api/user-voucher/${u.id}`)
-      .then(r=>r.json())
-      .then(d=>this.vouchers=d)
+ mounted(){
+  const u = JSON.parse(localStorage.getItem('currentUser'))
+  console.log('USER:', u)
+
+  if(u){
+
+    this.user = {
+         id: u.id,
+      name: u.name || '',
+      gender: u.gender || '',
+      birth: u.birth || '',
+      phone: u.phone || '',
+      email: u.email || '',
+      cmnd: u.cmnd || '',
+      city: u.city || '',
+      district: u.district || '',
+      address: u.address || ''
     }
-  },
+  }
+},
 
   methods:{
     getVoucherImage(v){
@@ -227,13 +248,27 @@ export default {
       return new Date(d).toLocaleDateString('vi-VN')
     },
 
-    saveProfile(){
-      fetch('http://127.0.0.1:8000/api/update-profile',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(this.user)
-      })
-    },
+   saveProfile(){
+  fetch('http://127.0.0.1:8000/api/update-profile',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(this.user)
+  })
+  .then(res => res.json())
+  .then(data => {
+
+    console.log('SERVER:', data)
+
+    this.user = data 
+    localStorage.setItem('currentUser', JSON.stringify(data))
+
+    alert('Cập nhật thành công!')
+  })
+  .catch(err => {
+    console.error(err)
+    alert('Lỗi cập nhật!')
+  })
+},
 
     changePassword(){
       if(this.passwordData.new_password!==this.passwordData.confirm_password) return
@@ -341,7 +376,7 @@ export default {
   padding:0 40px;
 }
 
-label{
+.form-group > label{
   display:block;
   margin-bottom:5px;
   font-size:13px;
@@ -359,7 +394,7 @@ input, select, textarea{
 }
 
 textarea{
-  height:100px;
+   width:100%;
 }
 
 .disabled-input{
@@ -534,5 +569,24 @@ textarea{
 
 .coupon-card button:hover{
   background:#e14e00;
+}
+.gender-group{
+  display: flex;
+  gap: 20px;
+}
+
+.gender-item{
+  display:flex !important;
+  justify-content: space-between;
+  align-items:center;
+  width:50px;
+  cursor:pointer;
+
+}
+.gender-item span{
+  font-size:20px;
+}
+.gender-item input{
+  width: auto;
 }
 </style>

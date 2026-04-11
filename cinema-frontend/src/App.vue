@@ -12,21 +12,15 @@ export default {
     }
   },
 
-  created(){
+  created() {
+  const saved = localStorage.getItem("currentUser")
 
-    const savedUser = localStorage.getItem("currentUser")
-
-    if(savedUser){
-      try{
-        this.user = JSON.parse(savedUser)
-      }catch(e){
-        console.error("Dữ liệu user lỗi:", savedUser)
-        localStorage.removeItem("currentUser")
-        this.user = null
-      }
-    }
+  if (saved) {
+    this.user = JSON.parse(saved)
+  }
+}
 
   }
 
-}
+
 </script>

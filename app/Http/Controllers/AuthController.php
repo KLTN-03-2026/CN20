@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Hash;
 class AuthController extends Controller
 {
 
-// ✅ LOGIN
 public function login(Request $request)
 {
     $request->validate([
@@ -43,23 +42,36 @@ public function login(Request $request)
     ],200);
 }
 
-
-// ✅ REGISTER
 public function register(Request $request)
 {
     $request->validate([
         'name'=>'required',
         'email'=>'required|email|unique:users',
-        'password'=>'required|min:6'
+        'password'=>'required|min:6|confirmed',
+        'phone'=>'nullable',
+        'birth'=>'nullable',
+        'gender'=>'nullable',
+        'cmnd'=>'nullable',
+        'city'=>'nullable',
+        'district'=>'nullable',
+        'address'=>'nullable',
+
     ]);
 
-    $user = User::create([
-        'name'=>$request->name,
-        'email'=>$request->email,
-        'password'=>Hash::make($request->password),
-        'role'=>'user',
-        'trang_thai'=>'hoatdong'
-    ]);
+   $user = User::create([
+    'name'=>$request->name,
+    'email'=>$request->email,
+    'password'=>Hash::make($request->password),
+    'phone'=>$request->phone,
+    'birth'=>$request->birth,
+    'gender'=>$request->gender,
+    'cmnd'=>$request->cmnd,
+    'city'=>$request->city,
+    'district'=>$request->district,
+    'address'=>$request->address,
+    'role'=>'user',
+    'trang_thai'=>'hoatdong'
+]);
 
     return response()->json([
         'message'=>'Đăng ký thành công',

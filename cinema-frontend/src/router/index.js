@@ -36,7 +36,7 @@ const routes = [
   children: [
     { path: "", name:"home", component: Home },
     { path: "magiamgia", component: Magiamgia },
-    { path: "profile", component: Profile },
+    { path: "profile", component: Profile, meta: { requiresAuth: true } },
     { path: "movie/:slug", component: MovieDetail },
     {
     path:"phimdangchieu",
@@ -47,7 +47,7 @@ const routes = [
     path:"phimsapchieu",
     name:"phimsapchieu",
     component:Phimsapchieu
-    
+
 },
  {
     path:"Tintuc",
@@ -60,7 +60,7 @@ const routes = [
     component:Tintucphim
     },
   ]
-  
+
 },
 
 {
@@ -130,5 +130,17 @@ const router = createRouter({
 history: createWebHistory(),
 routes
 })
+router.beforeEach((to, from, next) => {
+  const user = localStorage.getItem("currentUser")
 
+  if (to.meta.requiresAuth && !user) {
+    return next('/login')
+  }
+
+  if (to.path === '/login' && user) {
+    return next('/')
+  }
+
+  next()
+})
 export default router

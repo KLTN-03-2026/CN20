@@ -117,7 +117,6 @@
           </div>
         </div>
       </div>
-    <!-- POPUP ĐẶT VÉ -->
   <div v-if="showBooking" class="booking-modal">
 
   <div class="booking-box">
@@ -316,10 +315,116 @@ Tổng tiền: {{ totalPrice.toLocaleString() }} VND
       frameborder="0"
       allowfullscreen>
     </iframe>
+
+  </div>
+  </div>
+
+<!-- CONTACT BUTTON -->
+<div class="contact-box">
+  <button class="contact-btn" @click="open = !open">Liên hệ</button>
+
+  <div class="popup" v-if="open">
+
+    <div class="item" @click="openChatbot">
+      <img src="https://cdn-icons-png.flaticon.com/512/4712/4712100.png" class="icon">
+      <span>Chat với Chatbot AI</span>
+    </div>
+
+    <div class="item" @click="showZalo = true">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/9/91/Icon_of_Zalo.svg" class="icon">
+      <span>Liên hệ Zalo</span>
+    </div>
+
+    <span class="close" @click="open = false">✖</span>
   </div>
 </div>
 
+<!-- ZALO MODAL -->
+<div v-if="showZalo" class="zalo-modal" @click.self="showZalo = false">
+  <div class="zalo-box">
+
+    <!-- HEADER -->
+    <div class="zalo-header">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/9/91/Icon_of_Zalo.svg" class="zalo-logo">
+      <span>Zalo</span>
+      <span class="close" @click="showZalo=false">✖</span>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="zalo-content">
+
+      <!-- LEFT -->
+      <div class="zalo-left">
+        <div class="brand">
+          <div class="logo">R</div>
+          <div>
+            <h3>RIO CINEMA</h3>
+            <p>Đặt vé & hỗ trợ</p>
+          </div>
+        </div>
+
+        <button class="chat-btn">Nhắn tin</button>
+
+        <div class="desc">
+          Quét QR để liên hệ nhanh qua Zalo.
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="zalo-right">
+        <img
+          src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=https://zalo.me"
+        />
+        <p>Quét QR để mở Zalo</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+<div v-if="showChatbot" class="support-modal" @click.self="showChatbot=false">
+  <div class="support-box">
+
+    <!-- HEADER -->
+    <div class="support-header">
+      <div class="left">
+        <img src="https://cdn-icons-png.flaticon.com/512/4712/4712027.png"/>
+        <div>
+          <h4>Chat với AI tư vấn</h4>
+          <p>Em ở đây để hỗ trợ cho mình ạ</p>
+        </div>
+      </div>
+      <span class="close" @click="showChatbot=false">✖</span>
+    </div>
+
+    <div class="support-content">
+
+      <div class="user-box">
+        <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png"/>
+        <div class="info">
+        <p v-if="user?.name"> {{ user.name }}</p>
+
+        <p v-if="user?.phone"> {{ user.phone }}</p>
+
+        <p v-if="user?.email"> {{ user.email }}</p>
+
+    <small>{{ user.gender || 'Không rõ giới tính' }}</small>
+    </div>
+</div>
+
+      <!-- TEXTAREA -->
+      <textarea placeholder="Tin nhắn"></textarea>
+
+      <!-- BUTTON -->
+      <button class="start-btn">
+        ▶ BẮT ĐẦU TRÒ CHUYỆN
+      </button>
+
+    </div>
+
+  </div>
+</div>
   </template>
+
 
 
   <script>
@@ -356,6 +461,9 @@ Tổng tiền: {{ totalPrice.toLocaleString() }} VND
         movieIndex: 0,
         movieTimer: null,
         loading: false,
+        showZalo: false,
+        open: false,
+        showChatbot: false,
       }
     },
 
@@ -407,6 +515,13 @@ s.date === this.selectedDate.fullDate
 
     },
   methods: {
+    
+     openChatbot(){
+    this.showChatbot = true
+  },
+    openZalo() {
+     window.open("https://oa.zalo.me/yourpageid", "_blank", "width=500,height=700")
+  },
     autoMovieSlide(){
   this.movieTimer = setInterval(() => {
 
@@ -429,7 +544,6 @@ prevMovie(){
     this.movieIndex--
   }
 },
-
     getSeatPrice(seat){
 
   if(!this.selectedShowtime) return 0
@@ -486,7 +600,6 @@ prevMovie(){
     if(movie.ten_phim === "Thỏ Ơi") {
       this.trailerUrl = "https://www.youtube.com/embed/XMv1Zhj5TQg";
     } else {
-      // Nếu phim khác, lấy từ dữ liệu movie.trailer
       this.trailerUrl = movie.trailer || "";
       if(!this.trailerUrl){
         alert("Phim này chưa có trailer!");
@@ -643,7 +756,7 @@ async applyCoupon(){
 
 goCouponPage(){
   this.$router.push("/magiamgia")
-}
+},
   },
 
 mounted(){
@@ -680,8 +793,16 @@ mounted(){
   }
 
   this.autoMovieSlide()
-}
+
+  const saved = localStorage.getItem("currentUser")
+
+  if (saved) {
+    this.user = JSON.parse(saved)
   }
+  }
+}
+
+
 
   </script>
 
@@ -1623,5 +1744,350 @@ mounted(){
   display: flex;
   justify-content: center;
   align-items: center;
+}
+.contact-box {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  z-index: 99999;
+}
+
+.contact-btn {
+  background: #b30000;
+  color: white;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.popup {
+  position: absolute;
+  bottom: 60px;
+  right: 0;
+  width: 200px;
+  background: white;
+  padding: 14px 12px 16px 12px;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+}
+
+.popup .close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 6px;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: 0.2s;
+}
+
+.item:hover {
+  background: #f5f5f5;
+}
+
+.icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.item span {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+.zalo-modal{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  z-index:99999;
+  backdrop-filter: blur(5px);
+}
+
+/* BOX */
+.zalo-box{
+  width: 750px;
+  border-radius:16px;
+  overflow:hidden;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  animation: zoomIn 0.3s ease;
+}
+
+@keyframes zoomIn{
+  from{ transform: scale(0.9); opacity:0 }
+  to{ transform: scale(1); opacity:1 }
+}
+
+/* HEADER */
+.zalo-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:14px 20px;
+  background: linear-gradient(135deg,#0068ff,#00aaff);
+  color:white;
+}
+
+.zalo-header span{
+  font-weight:600;
+  font-size:16px;
+}
+
+.zalo-logo{
+  width:32px;
+}
+
+.zalo-header .close{
+  cursor:pointer;
+  font-size:18px;
+  transition:0.2s;
+}
+
+.zalo-header .close:hover{
+  transform: scale(1.2);
+}
+
+.zalo-content{
+  display:flex;
+  padding:30px;
+  gap:30px;
+}
+
+.zalo-left{
+  flex:1;
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:15px;
+}
+
+.logo {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: white;
+  font-family: 'Arial Black', sans-serif;
+}
+
+.logo span {
+  color: #ff4d00;
+  font-size: 14px;
+  letter-spacing: 2px;
+  margin-left: 6px;
+}
+
+.brand h3{
+  margin:0;
+  font-size:18px;
+  color:#111;
+}
+
+.brand p{
+  margin:0;
+  font-size:13px;
+  color:#666;
+}
+
+.chat-btn{
+  margin-top:25px;
+  padding:12px 28px;
+  background: linear-gradient(135deg,#0068ff,#00aaff);
+  color:white;
+  border:none;
+  border-radius:30px;
+  cursor:pointer;
+  font-weight:600;
+  transition:0.3s;
+  box-shadow:0 6px 15px rgba(0,104,255,0.3);
+}
+
+.chat-btn:hover{
+  transform: translateY(-2px);
+  box-shadow:0 10px 25px rgba(0,104,255,0.5);
+}
+
+.desc{
+  margin-top:20px;
+  color:#777;
+  font-size:14px;
+  line-height:1.5;
+}
+
+.zalo-right{
+  text-align:center;
+}
+
+.zalo-right img{
+  width:220px;
+  height:220px;
+  border-radius:16px;
+  padding:12px;
+  background:white;
+  box-shadow:0 10px 30px rgba(0,0,0,0.2);
+  transition:0.3s;
+}
+
+.zalo-right img:hover{
+  transform: scale(1.05);
+}
+
+.zalo-right p{
+  margin-top:12px;
+  font-size:14px;
+  color:#555;
+}
+.support-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  padding: 20px;
+  z-index: 99999;
+}
+
+/* BOX */
+.support-box {
+  width: 320px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* HEADER */
+.support-header {
+  background: #e1261c;
+  color: white;
+  padding: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.support-header .left {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.support-header img {
+  width: 40px;
+  border-radius: 50%;
+  background: white;
+  padding: 5px;
+}
+
+.support-header h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.support-header p {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.support-header .close {
+  cursor: pointer;
+  font-size: 18px;
+}
+
+/* CONTENT */
+.support-content {
+  padding: 12px;
+}
+
+/* USER */
+.user-box {
+  display: flex;
+  gap: 10px;
+  background: #f3f4f6;
+  padding: 10px;
+  border-radius: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.user-box img {
+  width: 36px;
+}
+
+.info h5 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.info p {
+  margin: 0;
+  font-size: 12px;
+  color: #555;
+}
+
+.info small {
+  font-size: 11px;
+  color: #888;
+}
+
+/* TEXTAREA */
+textarea {
+  width: 100%;
+  height: 80px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  padding: 10px;
+  resize: none;
+  outline: none;
+  font-size: 13px;
+}
+
+/* BUTTON */
+.start-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  background: #e1261c;
+  color: white;
+  border: none;
+  border-radius: 25px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.start-btn:hover {
+  background: #c91f16;
 }
 </style>

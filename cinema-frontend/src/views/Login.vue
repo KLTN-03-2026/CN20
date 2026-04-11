@@ -5,14 +5,14 @@
 
     <form @submit.prevent="login">
 
-      <input 
+      <input
         v-model="username"
         type="text"
         placeholder="Email"
         required
       />
 
-      <input 
+      <input
         v-model="password"
         type="password"
         placeholder="Mật khẩu"
@@ -27,7 +27,7 @@
   <span @click="$router.push('/register')">Đăng ký</span>
 </p>
 
-  </div>  
+  </div>
 </template>
 
 <script>

@@ -100,7 +100,8 @@ email:"",
 password:"",
 password_confirmation:"",
 city:"",
-district:""
+district:"",
+address:""
 }
 }
 },
@@ -121,19 +122,7 @@ headers:{
 "Content-Type":"application/json",
 "Accept":"application/json"
 },
-body:JSON.stringify({
-name:this.form.name,
-email:this.form.email,
-password:this.form.password,
-password_confirmation:this.form.password_confirmation,
-gender:this.form.gender,
-birth:this.form.birth,
-phone:this.form.phone,
-cmnd:this.form.cmnd,
-city:this.form.city,
-district:this.form.district,
-address:this.form.address
-})
+body: JSON.stringify(this.form)
 })
 
 const data = await res.json()
@@ -165,7 +154,7 @@ alert("Không kết nối được server")
 width:800px;
 margin:auto;
 padding:40px;
-background:white; 
+background:white;
  box-shadow:0 0 15px rgba(0,0,0,0.2);
 }
 
