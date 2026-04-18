@@ -6,16 +6,18 @@ use Illuminate\Database\Eloquent\Model;
 
 class Showtime extends Model
 {
-   protected $fillable = [
-    'movie',
+  protected $fillable = [
+    'movie_id',
+    'date',
+    'start_time',
+    'end_time',
     'room',
-    'start',
-    'end',
     'format',
-    'price'
-    ];
-    public function movie()
-    {
-        return $this->belongsTo(Movie::class);
-    }
+    'price',
+    'status'
+];
+public function movie()
+{
+    return $this->belongsTo(Movie::class);
+}
 }

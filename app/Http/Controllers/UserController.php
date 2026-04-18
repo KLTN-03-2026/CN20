@@ -23,25 +23,22 @@ public function show($id){
 
 
 // Cập nhật user
-public function update(Request $request,$id){
+public function update(Request $request,$id)
+{
+    $user = User::findOrFail($id);
 
-    $user = User::find($id);
+    $user->update($request->only([
+        'name',
+        'gender',
+        'birth',
+        'phone',
+        'cmnd',
+        'city',
+        'district',
+        'address'
+    ]));
 
-    $user->update([
-        'name'=>$request->name,
-        'gender'=>$request->gender,
-        'birth'=>$request->birth,
-        'phone'=>$request->phone,
-        'cmnd'=>$request->cmnd,
-        'city'=>$request->city,
-        'district'=>$request->district,
-        'address'=>$request->address
-    ]);
-
-    return response()->json([
-        "message"=>"Cập nhật thành công",
-        "user"=>$user
-    ]);
+    return response()->json($user);
 }
 
 

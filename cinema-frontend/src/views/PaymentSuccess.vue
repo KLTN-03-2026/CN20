@@ -109,10 +109,10 @@ export default {
     const ticketData = {
       user_id: currentUser?.id || 1,
       movie: this.movie,
-      room: "Room 1",
+      room: booking.room,
       seat: this.seats.join(" "),
       showtime: this.date + " " + this.time,
-      price: Number(this.amount), 
+      price: Number(this.amount),
     }
 
     try{

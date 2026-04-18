@@ -23,9 +23,9 @@ return new class extends Migration
 
         $table->string('room');
 
-        $table->string('format'); // 2D, 3D, IMAX
+        $table->string('format'); 
 
-        $table->integer('price'); // giá vé
+        $table->integer('price');
 
         $table->string('status')->default('dangchieu');
 

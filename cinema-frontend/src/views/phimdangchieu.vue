@@ -7,7 +7,7 @@
     </h2>
 
     <div class="movie-grid">
-      <div 
+      <div
         v-for="(movie,index) in movies"
         :key="movie.id"
         class="movie-card"
@@ -31,7 +31,7 @@
         </div>
 
         <div class="movie-info">
-          <h3 
+          <h3
             class="movie-name"
             @click="goDetail(movie.slug)"
           >
@@ -81,7 +81,7 @@
       </div>
 
       <div class="date-list">
-        <div 
+        <div
           class="date-item"
           v-for="d in dates"
           :key="d.day + d.month"
@@ -97,18 +97,18 @@
 
       <div class="movie-show">
 
-        <img 
+        <img
           v-if="selectedMovie"
           :src="'http://127.0.0.1:8000/storage/movies/' + selectedMovie.hinh_anh"
           class="showtime-poster"
         >
 
         <div class="showtimes">
-          <div 
+          <div
             class="time-box"
             v-for="show in filteredShowtimes"
             :key="show.id"
-            @click="openSeat(show)" 
+            @click="openSeat(show)"
           >
             <div class="time">
               {{ show.start }} - {{ show.end }}
@@ -130,9 +130,9 @@
         <div class="screen">MÀN HÌNH</div>
 
         <div class="seat-map">
-          <div 
-            v-for="row in rows" 
-            :key="row" 
+          <div
+            v-for="row in rows"
+            :key="row"
             class="seat-row"
           >
             <span class="row-name">{{ row }}</span>
@@ -160,7 +160,7 @@
 
       <div class="seat-right">
 
-        <img 
+        <img
           :src="'http://127.0.0.1:8000/storage/movies/' + selectedMovie.hinh_anh"
           class="seat-poster"
         >
@@ -183,7 +183,7 @@
         </div>
 
         <div class="coupon-box">
-          <input 
+          <input
             v-model="couponCode"
             placeholder="Mã giảm giá"
             class="coupon-input"
@@ -245,7 +245,7 @@ const data = localStorage.getItem("showtimes")
 
 if(data){
   this.showtimes = JSON.parse(data)
-  
+
 }
 
 },
@@ -303,13 +303,14 @@ return "http://127.0.0.1:8000/storage/movies/"+img
     if (r.includes("13")) return "text-yellow font-bold";
     if (r.toLowerCase() === "p") return "text-green font-bold";
     return "";
-  
+
 
 },
 datVe(movie){
-  this.selectedMovie = movie
-  this.showBooking = true
-  this.generateDates() 
+  this.$router.push({
+    path: '/',
+    query: { booking: movie.slug }
+  })
 },
 goDetail(slug){
   this.$router.push(`/movie/${slug}`)

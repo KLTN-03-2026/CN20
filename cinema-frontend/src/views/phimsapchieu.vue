@@ -192,10 +192,11 @@ export default {
     },
 
     datVe(movie) {
-      this.selectedMovie = movie
-      this.showBooking = true
-      this.generateDates()
-    },
+  this.$router.push({
+    path: '/',
+    query: { booking: movie.slug }
+  })
+},
 
     goDatVe(movie) {
       this.$router.push(`/datve/${movie.id}`)
@@ -279,7 +280,7 @@ export default {
 .poster {
   width: 100%;
   height: 100%;
-  object-fit: cover;  
+  object-fit: cover;
 }
 
 .poster-box:hover .poster {

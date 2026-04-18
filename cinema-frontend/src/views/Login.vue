@@ -61,9 +61,15 @@ export default {
           }
         )
 
-        const user = response.data.user
+       const user = response.data.user
+
 
         localStorage.setItem("currentUser", JSON.stringify(user))
+
+
+        localStorage.setItem("memberCard", JSON.stringify(user.member))
+
+        console.log("member:", user.member)
 
         alert("Đăng nhập thành công")
 

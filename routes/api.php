@@ -12,8 +12,9 @@ use App\Http\Controllers\TicketController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\ShowtimeController;
-
-
+use App\Http\Controllers\ChatbotController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\MemberCardController;
 
 
 Route::get('/movies', [MovieController::class, 'index']);
@@ -53,14 +54,12 @@ Route::put('/showtimes/{id}', [ShowtimeController::class,'update']);
 Route::delete('/showtimes/{id}', [ShowtimeController::class,'destroy']);
 Route::get('/movies/{id}', [MovieController::class, 'show']);
 Route::post('/chatbot', [ChatbotController::class, 'chat']);
+Route::get('/admin/dashboard', [DashboardController::class, 'dashboard']);
+Route::post('/link-member-card',[MemberCardController::class,'linkCard']);
+Route::get('/member-card/{userId}',[MemberCardController::class,'getCard']);
+Route::post('/member/update', [AuthController::class, 'updateMember']);
 Route::prefix('admin')->group(function () {
 
-
-    Route::get('/dashboard', function () {
-        return response()->json([
-            'message' => 'Admin dashboard'
-        ]);
-    });
 
     Route::get('/movies',[AdminMovieController::class,'index']);
     Route::post('/movies',[AdminMovieController::class,'store']);

@@ -17,9 +17,12 @@
           LỊCH SỬ GIAO DỊCH
         </div>
 
-        <div class="sidebar-item" :class="{active: activeTab==='discount'}" @click="activeTab='discount'">
+        <div class="sidebar-item" :class="{active: activeTab==='discount'}" @click="openVoucher">
           MÃ GIẢM GIÁ
         </div>
+        <div class="sidebar-item" :class="{active: activeTab==='member'}" @click="openMemberCard">
+  THẺ THÀNH VIÊN
+</div>
       </div>
 
       <div class="content">
@@ -122,7 +125,6 @@
           <button class="save-btn" @click="changePassword">LƯU LẠI</button>
         </div>
 
-        <!-- VOUCHER -->
         <div v-if="activeTab==='discount'" class="discount-box">
           <div class="content-title">MÃ GIẢM GIÁ</div>
 
@@ -161,7 +163,7 @@
               <p><b>Phòng:</b> {{ t.room }}</p>
               <p><b>Ghế:</b> {{ t.seat }}</p>
               <p><b>Suất:</b> {{ t.showtime }}</p>
-              <p><b>Giá:</b> {{ t.price }} đ</p>
+              <p><b>Giá:</b> {{ getFinalPrice(t.price) }} đ</p>
               <p class="paid">Đã thanh toán</p>
             </div>
 
@@ -172,10 +174,55 @@
             <button class="delete-btn" @click="deleteTicket(t.id)">🗑</button>
           </div>
         </div>
+         <div v-if="activeTab==='member'" class="member-box">
 
-      </div>
+  <div class="content-title">THẺ THÀNH VIÊN</div>
+
+  <div v-if="!memberCard">
+
+    <input
+      v-model="memberCode"
+      placeholder="Nhập mã thẻ thành viên"
+      class="member-input"
+    >
+
+    <button class="link-btn" @click="linkMemberCard">
+      Liên Kết Thẻ
+    </button>
+
+  </div>
+
+  <div v-else class="member-card">
+      <div v-if="memberCard" class="level-badge" :class="memberCard.level">
+    {{ memberCard.level }}
+  </div>
+
+    <h2>{{ memberCard.level }}</h2>
+
+    <p>Mã thẻ: {{ memberCard.code }}</p>
+
+    <p>Giảm giá: {{ memberCard.discount }}%</p>
+
+    <p>Tổng chi tiêu: {{ formatPrice(memberCard.total_spent) }}</p>
+
+  </div>
+<div v-if="memberCard" class="progress-wrapper">
+  <div class="progress-bar">
+    <div class="progress-fill" :style="{ width: percent + '%' }"></div>
+  </div>
+
+  <div class="milestones">
+    <span>0</span>
+    <span>500k</span>
+    <span>1tr</span>
+    <span>2tr</span>
+        </div>
     </div>
+ </div>
+        </div>
     </div>
+</div>
+
 </template>
 
 <script>
@@ -193,32 +240,234 @@ export default {
       passwordData:{},
       tickets:[],
       vouchers:[],
-      copiedCode:''
+      copiedCode:'',
+      memberCode:'',
+      memberCard:null
     }
   },
 
- mounted(){
+async mounted() {
   const u = JSON.parse(localStorage.getItem('currentUser'))
-  console.log('USER:', u)
 
-  if(u){
+  if (!u?.id) return
 
+  try {
+    let res = await fetch(`http://127.0.0.1:8000/api/user/${u.id}`)
+    let data = await res.json()
+
+    console.log("USER FROM DB:", data)
     this.user = {
-         id: u.id,
-      name: u.name || '',
-      gender: u.gender || '',
-      birth: u.birth || '',
-      phone: u.phone || '',
-      email: u.email || '',
-      cmnd: u.cmnd || '',
-      city: u.city || '',
-      district: u.district || '',
-      address: u.address || ''
+      id: data.id,
+      name: data.name || '',
+      gender: data.gender || '',
+      birth: data.birth || '',
+      phone: data.phone || '',
+      email: data.email || '',
+      cmnd: data.cmnd || '',
+      city: data.city || '',
+      district: data.district || '',
+      address: data.address || ''
+    }
+    localStorage.setItem('currentUser', JSON.stringify(data))
+    await this.openMemberCard()
+
+    if (this.memberCard) {
+      this.memberCard.discount = this.getDiscount(this.memberCard.level)
+
+      localStorage.setItem("memberCard", JSON.stringify({
+        level: this.memberCard.level,
+        discount: this.memberCard.discount
+      }))
+    }
+
+  } catch (err) {
+    console.error(err)
+  }
+},
+computed:{
+  percent(){
+    if (!this.memberCard) return 0
+
+    const total = this.memberCard.total_spent
+
+    if (total < 500000) {
+      return (total / 500000) * 33
+    } else if (total < 1000000) {
+      return 33 + ((total - 500000) / 500000) * 33
+    } else {
+      return 66 + ((total - 1000000) / 1000000) * 34
     }
   }
 },
+methods:{
+  getFinalPrice(price){
+    if (!this.memberCard) return price
+    const discount = this.memberCard.discount || 0
+    return price - (price * discount / 100)
+  },
 
-  methods:{
+  getDiscount(level){
+  const map = {
+    BAC: 10,
+    BẠC: 10,
+    VANG: 15,
+    VÀNG: 15,
+    KIMCUONG: 25,
+    KIM_CUONG: 25
+  }
+
+  const key = level
+    ?.normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // bỏ dấu tiếng Việt
+    .toUpperCase()
+    .replace(/\s/g, "_")
+
+  return map[key] || 0
+},
+    async upgradeMember(type){
+  const user = JSON.parse(localStorage.getItem("currentUser"))
+
+  let res = await fetch("http://127.0.0.1:8000/api/member/update", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      user_id: user.id,
+      member_type: type
+    })
+  })
+
+  let data = await res.json()
+
+  if(res.ok){
+    alert("Cập nhật thẻ thành công")
+
+    // update UI
+    this.memberCard = data.member
+
+    // update localStorage
+    let current = JSON.parse(localStorage.getItem("currentUser"))
+    current.member_type = data.member.type
+    current.member_discount = data.member.discount
+    localStorage.setItem("currentUser", JSON.stringify(current))
+  }else{
+    alert(data.message)
+  }
+},
+ async linkMemberCard(){
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"))
+
+  if(!currentUser?.id){
+    alert("User không hợp lệ")
+    return
+  }
+
+  if(!this.memberCode){
+    alert("Chưa nhập mã thẻ")
+    return
+  }
+
+  let res = await fetch("http://127.0.0.1:8000/api/link-member-card",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({
+      user_id: currentUser.id,
+      code: this.memberCode
+    })
+  })
+
+  let text = await res.text()
+  console.log("RAW RESPONSE:", text)
+
+  let data
+  try {
+    data = JSON.parse(text)
+  } catch(e){
+    console.log("❌ Backend không trả JSON:", text)
+    alert("Server lỗi 500")
+    return
+  }
+
+  if(!res.ok){
+    alert(data.message || "Link thất bại")
+    return
+  }
+
+  // =========================
+  // ✅ FIX CHÍNH Ở ĐÂY
+  // =========================
+
+  let card = data.card || data.member || data
+
+  this.memberCard = card
+
+  this.memberCard.discount = this.getDiscount(card.level)
+
+  // update localStorage nếu cần
+  localStorage.setItem("memberCard", JSON.stringify(this.memberCard))
+
+  alert("Liên kết thành công")
+  await this.openMemberCard()
+},
+async openMemberCard(){
+
+  this.activeTab = 'member'
+
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"))
+
+  if(!currentUser?.id){
+    alert("Không tìm thấy user")
+    return
+  }
+
+  let res = await fetch(
+    `http://127.0.0.1:8000/api/member-card/${currentUser.id}`
+  )
+
+  let data = await res.json()
+
+  console.log("MEMBER CARD API:", data)
+
+  // 👉 lấy đúng object card (tuỳ backend trả về kiểu gì)
+  let card = data.card || data.member || data
+
+  // nếu không có dữ liệu
+  if(!card || !card.level){
+    this.memberCard = null
+    return
+  }
+
+  this.memberCard = card
+
+  // 👉 tính discount ngay sau khi load
+  this.memberCard.discount = this.getDiscount(card.level)
+},
+    async openVoucher(){
+
+  this.activeTab='discount'
+
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"))
+
+  if(!currentUser) return
+
+  try{
+
+    let res = await fetch(
+      `http://127.0.0.1:8000/api/user-voucher/${currentUser.id}`
+    )
+
+    let data = await res.json()
+
+    this.vouchers = data
+
+  }catch(err){
+
+    console.log(err)
+
+  }
+
+},
     getVoucherImage(v){
       if(v==20000) return img20k
       if(v==30000) return img30k
@@ -248,10 +497,10 @@ export default {
       return new Date(d).toLocaleDateString('vi-VN')
     },
 
-   saveProfile(){
-  fetch('http://127.0.0.1:8000/api/update-profile',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
+ saveProfile() {
+  fetch('http://127.0.0.1:8000/api/update-profile', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(this.user)
   })
   .then(res => res.json())
@@ -259,8 +508,26 @@ export default {
 
     console.log('SERVER:', data)
 
-    this.user = data 
-    localStorage.setItem('currentUser', JSON.stringify(data))
+    // ✅ PHẢI LẤY TRƯỚC
+    let oldUser = JSON.parse(localStorage.getItem('currentUser')) || {}
+
+    // update từng field
+    oldUser.name = data.name ?? oldUser.name
+    oldUser.gender = data.gender ?? oldUser.gender
+    oldUser.birth = data.birth ?? oldUser.birth
+    oldUser.phone = data.phone ?? oldUser.phone
+    oldUser.cmnd = data.cmnd ?? oldUser.cmnd
+    oldUser.city = data.city ?? oldUser.city
+    oldUser.district = data.district ?? oldUser.district
+    oldUser.address = data.address ?? oldUser.address
+
+    // update UI
+    this.user = oldUser
+
+    // lưu lại localStorage
+    localStorage.setItem('currentUser', JSON.stringify(oldUser))
+
+    this.$forceUpdate()
 
     alert('Cập nhật thành công!')
   })
@@ -588,5 +855,93 @@ textarea{
 }
 .gender-item input{
   width: auto;
+}.member-box{
+  max-width:800px;
+  margin:auto;
+}
+
+.member-input{
+  width:100%;
+  padding:12px;
+  margin-bottom:15px;
+}
+
+.link-btn{
+  background:#ff5a00;
+  color:white;
+  border:none;
+  padding:12px 20px;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+.member-card{
+  padding:30px;
+  border-radius:20px;
+  color:#222;
+  background: linear-gradient(135deg,#ffffff,#f3f6ff);
+  box-shadow:0 10px 30px rgba(0,0,0,0.08);
+  border:1px solid #eee;
+  position:relative;
+  overflow:hidden;
+}
+
+.member-card::before{
+  content:"";
+  position:absolute;
+  top:0; left:0;
+  width:100%;
+  height:6px;
+  background:linear-gradient(90deg,#ff9800,#ff5722,#2196f3);
+}
+
+.member-card h2{
+  font-size:28px;
+  margin-bottom:15px;
+  color:#ff5a00;
+}.level-badge{
+  display:inline-block;
+  padding:6px 12px;
+  border-radius:20px;
+  font-weight:bold;
+  margin-bottom:10px;
+}
+
+.BAC, .BẠC{
+  background:#e0e0e0;
+  color:#333;
+}
+
+.VANG, .VÀNG {
+  background:gold;
+  color:#000;
+}
+
+.KIMCUONG, .KIM_CUONG {
+  background:linear-gradient(45deg,#00c6ff,#0072ff);
+  color:white;
+}
+.progress-wrapper{
+  margin-top:20px;
+}
+
+.progress-bar{
+  height:8px;
+  background:#ddd;
+  border-radius:10px;
+  overflow:hidden;
+}
+
+.progress-fill{
+  height:100%;
+  background:linear-gradient(90deg,#ff9800,#ff5722);
+  transition:0.6s;
+}
+
+.milestones{
+  display:flex;
+  justify-content:space-between;
+  margin-top:6px;
+  font-size:12px;
 }
 </style>

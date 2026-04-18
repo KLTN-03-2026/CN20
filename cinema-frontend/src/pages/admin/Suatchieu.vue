@@ -12,7 +12,13 @@
 
       <h3>Tạo Suất Chiếu</h3>
 
-      <input v-model="newShow.movie" placeholder="Tên phim" />
+      <select v-model="newShow.movie">
+  <option disabled value="">Chọn phim</option>
+
+  <option v-for="m in movies" :key="m.id" :value="m.id">
+    {{ m.ten_phim }}
+  </option>
+</select>
       <input type="date" v-model="newShow.date" />
       <input v-model="newShow.room" placeholder="Phòng" />
       <input v-model="newShow.start" placeholder="Giờ bắt đầu" />
@@ -49,15 +55,6 @@
       <button @click="nextDate">›</button>
     </div>
 
-    <button
-      v-for="show in movieShowtimes"
-      :key="show.id"
-      class="time-btn"
-      @click="selectShow(show)"
-    >
-      {{ show.start }}
-    </button>
-
   </div>
 
   <table class="showtime-table">
@@ -80,10 +77,10 @@
     <tbody>
       <tr v-for="(show,index) in filteredShowtimes" :key="show.id">
         <td>{{ index+1 }}</td>
-        <td>{{ show.movie }}</td>
+        <td>{{ show.movie?.ten_phim }}</td>
         <td>{{ show.room }}</td>
-        <td>{{ show.start }}</td>
-        <td>{{ show.end }}</td>
+        <td>{{ show.start_time ? show.start_time.slice(0,5) : '' }}</td>
+        <td>{{ show.end_time ? show.end_time.slice(0,5) : '' }}</td>
         <td>{{ show.format }}</td>
         <td>{{ show.price }} đ</td>
 
@@ -92,7 +89,7 @@
         </td>
 
         <td>
-          <span class="status">{{ show.status }}</span>
+          <span class="status">{{ show.status || 'dangchieu' }}</span>
         </td>
 
         <td class="action-box">
@@ -109,15 +106,17 @@
 </template>
 
 <script>
+import axios from "axios"
 export default {
 
 data(){
   return{
     editingId:null,
     showForm:false,
-    movie:null,
+    movies: [],
     newShow:{
       movie:"",
+      date:"",
       room:"",
       start:"",
       end:"",
@@ -130,7 +129,8 @@ data(){
       "Phòng 2",
       "Phòng 3",
       "Phòng 4",
-      "Phòng 5"
+      "Phòng 5",
+      "Phòng 6 "
     ],
     selectedRoom:"Tất cả",
     selectedDate:new Date(),
@@ -138,28 +138,18 @@ data(){
   }
 },
 
-mounted(){
-  const data = localStorage.getItem("showtimes")
-  if(data){
-    this.showtimes = JSON.parse(data)
-  }
+async mounted(){
+  await this.fetchMovies()
+  await this.fetchShowtimes()
+
 },
-
 computed:{
-
-  movieShowtimes(){
-    if(!this.movie) return []
-    return this.showtimes.filter(
-      s => s.movie === this.movie.ten_phim
-    )
-  },
-
   filteredShowtimes(){
 
     const date = this.selectedDate.toISOString().split("T")[0]
 
     let shows = this.showtimes.filter(
-      s => s.date === date
+      s => s.date.startsWith(date)
     )
 
     if(this.selectedRoom !== "Tất cả"){
@@ -169,24 +159,30 @@ computed:{
     }
 
     return shows
-  }
-
+  },
 },
-
 methods:{
-
+    async fetchShowtimes(){
+  const res = await axios.get("http://127.0.0.1:8000/api/showtimes")
+  this.showtimes = res.data
+},
+     async fetchMovies(){
+  const res = await axios.get("http://127.0.0.1:8000/api/movies")
+  this.movies = res.data
+},
   editShow(show){
     this.showForm = true
     this.editingId = show.id
 
-    this.newShow = {
-      movie: show.movie,
-      room: show.room,
-      start: show.start,
-      end: show.end,
-      format: show.format,
-      price: show.price
-    }
+   this.newShow = {
+  movie: show.movie_id,
+  date: show.date?.split("T")[0],
+  room: show.room,
+  start: show.start_time,
+  end: show.end_time,
+  format: show.format,
+  price: show.price
+}
   },
 
   selectShow(show){
@@ -198,69 +194,58 @@ methods:{
     this.selectedRoom = room
   },
 
-  saveShowtime(){
+async saveShowtime(){
 
-    const date = this.selectedDate.toISOString().split("T")[0]
+ const payload = {
+  movie_id: Number(this.newShow.movie),
+  date: this.newShow.date,
+  room: this.newShow.room,
+  start_time: this.newShow.start,
+  end_time: this.newShow.end,
+  format: this.newShow.format,
+  price: this.newShow.price
+}
 
-    if(this.editingId){
+ try{
 
-      const index = this.showtimes.findIndex(s => s.id === this.editingId)
+   if(this.editingId){
+      await axios.put(
+        `http://127.0.0.1:8000/api/showtimes/${this.editingId}`,
+        payload
+      )
+   }else{
+      await axios.post(
+        "http://127.0.0.1:8000/api/showtimes",
+        payload
+      )
+   }
 
-      this.showtimes[index] = {
-        id: this.editingId,
-        movie: this.newShow.movie,
-        date: date,
-        room: this.newShow.room,
-        start: this.newShow.start,
-        end: this.newShow.end,
-        format: this.newShow.format,
-        price: this.newShow.price,
-        status: "dangchieu"
-      }
+   await this.fetchShowtimes()
 
-      this.editingId = null
+   this.selectedDate = new Date(this.newShow.date)
 
-    }else{
+   this.showForm = false
+   this.editingId = null
 
-      const show = {
-        id: Date.now(),
-        movie: this.newShow.movie,
-        date: date,
-        room: this.newShow.room,
-        start: this.newShow.start,
-        end: this.newShow.end,
-        format: this.newShow.format,
-        price: this.newShow.price,
-        status: "dangchieu"
-      }
+ }catch(e){
+   console.log(e)
+ }
 
-      this.showtimes.push(show)
+},
+  async deleteShow(id){
 
-    }
+  const isConfirm = confirm("Bạn có chắc chắn muốn xóa không?")
+  if(!isConfirm) return
 
-    localStorage.setItem("showtimes", JSON.stringify(this.showtimes))
+  try {
+    await axios.delete(`http://127.0.0.1:8000/api/showtimes/${id}`)
 
-    this.showForm = false
+    await this.fetchShowtimes()
 
-    this.newShow = {
-      movie:"",
-      room:"",
-      start:"",
-      end:"",
-      format:"",
-      price:""
-    }
-
-  },
-
-  deleteShow(id){
-    const isConfirm = confirm("Bạn có chắc chắn muốn xóa không?")
-    if(!isConfirm) return
-
-    this.showtimes = this.showtimes.filter(s => s.id !== id)
-
-    localStorage.setItem("showtimes", JSON.stringify(this.showtimes))
-  },
+  } catch(e){
+    console.log(e)
+  }
+},
 
   formatDate(date){
 

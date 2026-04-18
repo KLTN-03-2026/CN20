@@ -30,7 +30,6 @@
 <th>Trailer</th>
 <th>Ngôn ngữ</th>
 <th>Tình trạng</th>
-<th>Active</th>
 </tr>
 
 <tr v-for="movie in filteredMovies" :key="movie.id">

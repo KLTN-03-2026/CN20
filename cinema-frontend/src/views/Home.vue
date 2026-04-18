@@ -85,7 +85,7 @@
 
         <div class="promo-section" @click="goCouponPage">
 
-          <h2 class="promo-title">KHUYẾN MÃI & ƯU ĐÃI</h2>
+          <h2 class="promo-title">MÃ GIẢM GIÁ </h2>
 
           <div class="promo-grid">
 
@@ -159,21 +159,20 @@
         <img :src="'http://127.0.0.1:8000/storage/movies/' + selectedMovie.hinh_anh" class="showtime-poster">
 
         <div class="showtimes">
+  <div class="time-box"
+    v-for="show in filteredShowtimes"
+    :key="show.id"
+    @click="openSeat(show)"
+  >
+    <div class="time">
+      {{ show.start_time }} - {{ show.end_time }}
+    </div>
 
-        <div
-        class="time-box"
-        v-for="show in filteredShowtimes"
-        :key="show.id"
-       @click="openSeat(show)"
-        >
-        {{ show.start }} - {{ show.end }}
+    <p>{{ show.room }}</p>
+    <small>{{ show.format }}</small>
 
-
-        <p>{{ show.room }}</p>
-
-        </div>
-
-        </div>
+  </div>
+</div>
        </div>
         </div>
 
@@ -339,7 +338,6 @@ Tổng tiền: {{ totalPrice.toLocaleString() }} VND
 <div v-if="showZalo" class="zalo-modal" @click.self="showZalo = false">
   <div class="zalo-box">
 
-    <!-- HEADER -->
     <div class="zalo-header">
       <img src="https://upload.wikimedia.org/wikipedia/commons/9/91/Icon_of_Zalo.svg" class="zalo-logo">
       <span>Zalo</span>
@@ -379,8 +377,6 @@ Tổng tiền: {{ totalPrice.toLocaleString() }} VND
 </div>
 <div v-if="showChatbot" class="support-modal" @click.self="showChatbot=false">
   <div class="support-box">
-
-    <!-- HEADER -->
     <div class="support-header">
       <div class="left">
         <img src="https://cdn-icons-png.flaticon.com/512/4712/4712027.png"/>
@@ -419,7 +415,7 @@ Tổng tiền: {{ totalPrice.toLocaleString() }} VND
 
 <input v-model="userMessage" placeholder="Nhập tin nhắn..." />
 
-<button @click="sendMessage">
+<button type="button" @click="sendMessage">
   Gửi
 </button>
 
@@ -469,35 +465,40 @@ Tổng tiền: {{ totalPrice.toLocaleString() }} VND
         open: false,
         showChatbot: false,
         userMessage: "",
-        messages: []
+        messages: [],
+        memberDiscount: 0,
+        memberLevel: null,
       }
     },
 
       computed:{
-       totalPrice(){
+      totalPrice() {
   let total = 0
 
-  this.selectedSeats.forEach(seat=>{
+  this.selectedSeats.forEach(seat => {
     total += this.getSeatPrice(seat)
   })
 
-  total = total - this.discount
+  const memberDiscount = parseFloat(this.memberDiscount) || 0
+  const voucher = parseFloat(this.discount) || 0
 
-  return total < 0 ? 0 : total
+  if (memberDiscount > 0) {
+    total *= (1 - memberDiscount / 100)
+  }
+
+  total -= voucher
+
+  return total < 0 ? 0 : Math.round(total)
 },
- filteredShowtimes(){
+ filteredShowtimes() {
+  if (!this.selectedMovie || !this.selectedDate) return []
 
-if(!this.selectedMovie || !this.selectedDate) return []
-
-return this.showtimes.filter(s => {
-
-return (
-s.movie.trim() === this.selectedMovie.ten_phim.trim() &&
-s.date === this.selectedDate.fullDate
-)
-
-})
-
+  return this.showtimes.filter(s => {
+    return (
+      Number(s.movie_id) === Number(this.selectedMovie.id) &&
+      s.date === this.selectedDate.fullDate
+    )
+  })
 },
 
       dangChieu(){
@@ -521,35 +522,45 @@ s.date === this.selectedDate.fullDate
 
     },
   methods: {
-    async sendMessage() {
 
-  if (!this.userMessage) return
+  async sendMessage() {
+  if (!this.userMessage.trim()) return
 
   this.messages.push({
     role: "user",
     text: this.userMessage
   })
 
-  const res = await fetch("http://127.0.0.1:8000/api/chatbot", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      message: this.userMessage
+  try {
+    const res = await fetch("http://127.0.0.1:8000/api/chatbot", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify({
+        message: this.userMessage
+      })
     })
-  })
 
-  const data = await res.json()
+    const data = await res.json()
 
-  this.messages.push({
-    role: "bot",
-    text: data.reply
-  })
+    this.messages.push({
+      role: "bot",
+      text: data.reply
+    })
+
+  } catch (err) {
+    console.log(err)
+
+    this.messages.push({
+      role: "bot",
+      text: "Lỗi kết nối server"
+    })
+  }
 
   this.userMessage = ""
 },
-
      openChatbot(){
     this.showChatbot = true
   },
@@ -582,7 +593,7 @@ prevMovie(){
 
   if(!this.selectedShowtime) return 0
 
-  const base = parseInt(this.selectedShowtime.price)
+  const base = Number(this.selectedShowtime?.price || 0)
 
   const row = seat.charAt(0)
 
@@ -646,8 +657,6 @@ prevMovie(){
 
   datVe(movie){
 console.log("selectedMovie:", movie)
-
-
     if(!this.user){
       alert("Bạn cần đăng nhập để đặt vé!")
       this.$router.push("/login")
@@ -731,15 +740,16 @@ console.log("selectedMovie:", movie)
     return;
   }
 
-  const booking = {
-    movie: this.selectedMovie.ten_phim,
-    date: this.selectedDate.day + "/" + this.selectedDate.month + "/2026",
-    time: this.selectedShowtime.start + " - " + this.selectedShowtime.end,
-    seats: this.selectedSeats,
-    total: this.totalPrice
-  };
+ const booking = {
+  movie: this.selectedMovie.ten_phim,
+  date: this.selectedDate.day + "/" + this.selectedDate.month + "/2026",
+  time: this.selectedShowtime.start_time + " - " + this.selectedShowtime.end_time,
+  room: this.selectedShowtime.room,
+  seats: this.selectedSeats,
+  total: this.totalPrice
+};
 
-  localStorage.setItem("booking", JSON.stringify(booking));
+localStorage.setItem("booking", JSON.stringify(booking));
   console.log("Booking saved:", booking);
 
   const res = await fetch("http://127.0.0.1:8000/api/momo_payment", {
@@ -766,20 +776,26 @@ async applyCoupon(){
     alert("Vui lòng nhập mã")
     return
   }
+  console.log("discount:", this.discount)
 
   try{
     const res = await fetch("http://127.0.0.1:8000/api/vouchers")
     const data = await res.json()
 
-    const found = data.find(v => v.code === this.couponCode)
+    const found = data.find(v =>
+  v.code.trim().toLowerCase() === this.couponCode.trim().toLowerCase()
+)
 
-    if(!found){
-      alert("Mã không hợp lệ")
-      this.discount = 0
-    }else{
-      this.discount = Number(found.value)
-      alert("Áp mã thành công - giảm " + this.discount.toLocaleString() + " VND")
-    }
+  if(!found){
+  alert("Mã không hợp lệ")
+  this.discount = 0
+}else{
+  this.discount = parseInt(found.value) || 0
+  console.log("Voucher value:", found.value)
+  console.log("Discount after parse:", this.discount)
+
+  alert("Áp mã thành công - giảm " + this.discount.toLocaleString() + " VND")
+}
 
   }catch(e){
     console.log(e)
@@ -793,48 +809,68 @@ goCouponPage(){
 },
   },
 
-mounted(){
+mounted() {
 
-  console.log("showtimes:", this.showtimes)
+  const saved = localStorage.getItem("chat_history")
 
-  this.autoSlide()
+  if (saved) {
+    this.messages = JSON.parse(saved)
+  }
+  const memberStr = localStorage.getItem("memberCard")
 
-  // LOAD MOVIES
-  fetch("http://127.0.0.1:8000/api/movies")
-  .then(res => res.json())
-  .then(data=>{
-    this.movies = data
+  let member = {
+    type: "normal",
+    discount: 0
+  }
 
-    const slug = this.$route.query.booking
-
-    if(slug){
-      const movie = this.movies.find(m => m.slug === slug)
-      if(movie){
-        this.datVe(movie)
-      }
+  try {
+    if (memberStr) {
+      member = JSON.parse(memberStr)
     }
+  } catch (e) {
+    console.log("Parse memberCard lỗi:", e)
+  }
 
-  })
+  this.memberLevel = member.type || "normal"
+  this.memberDiscount = Number(member.discount) || 0
+
+  console.log("memberLevel:", this.memberLevel)
+  console.log("memberDiscount:", this.memberDiscount)
 
   this.generateDates()
   this.generateSeats()
-
-  // LOAD SHOWTIMES
-  const dataLocal = localStorage.getItem("showtimes")
-
-  if(dataLocal){
-    this.showtimes = JSON.parse(dataLocal)
-  }
-
+  this.autoSlide()
   this.autoMovieSlide()
 
-  const saved = localStorage.getItem("currentUser")
+  fetch("http://127.0.0.1:8000/api/movies")
+    .then(res => res.json())
+    .then(data => {
+      this.movies = data
 
-  if (saved) {
-    this.user = JSON.parse(saved)
-  }
+      const slug = this.$route.query.booking
+      if (slug) {
+        const movie = this.movies.find(m => m.slug === slug)
+        if (movie) this.datVe(movie)
+      }
+    })
+    .catch(err => console.log(err))
+
+ fetch("http://127.0.0.1:8000/api/showtimes")
+  .then(res => res.json())
+  .then(data => {
+    this.showtimes = data
+  })
+
+},
+watch: {
+  messages: {
+    deep: true,
+    handler(val) {
+      localStorage.setItem("chat_history", JSON.stringify(val))
+    }
   }
 }
+  }
 
   </script>
 
@@ -1099,12 +1135,14 @@ mounted(){
     margin-top:80px;
   }
 
-  .promo-title{
-    text-align:center;
-    font-size:32px;
-    font-weight:bold;
-    margin-bottom:40px;
-  }
+ .promo-title{
+  text-align:center;
+  font-size:32px;
+  font-weight:bold;
+  margin-bottom:40px;
+  color: #ffffff;
+  transition: 0.3s;
+}
 
   .promo-grid{
     display:grid;
@@ -1134,12 +1172,12 @@ mounted(){
   }
 
   .promo-text h3{
-    color:#ff4d00;
+     color: black !important;
     margin-bottom:20px;
   }
 
   .promo-text p{
-    color:#444;
+     color: black !important;
     line-height:1.6;
   }
 
@@ -2055,7 +2093,43 @@ mounted(){
 .support-content {
   padding: 12px;
 }
+.support-content input {
+  width: calc(100% - 70px);
+  padding: 10px 14px;
+  border-radius: 20px;
+  border: 1px solid #ddd;
+  outline: none;
+  font-size: 13px;
+  transition: 0.2s;
+}
 
+.support-content input:focus {
+  border-color: #e1261c;
+  box-shadow: 0 0 5px rgba(225, 38, 28, 0.3);
+}
+
+.support-content button {
+  width: 50px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: #e1261c;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+  transition: 0.2s;
+}
+
+.support-content button:hover {
+  background: #c91f16;
+  transform: scale(1.1);
+}
+
+.support-content .input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .user-box {
   display: flex;
   gap: 10px;
@@ -2112,5 +2186,27 @@ textarea {
 
 .start-btn:hover {
   background: #c91f16;
+}
+.chat-box {
+  max-height: 250px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+}
+
+.msg {
+  padding: 8px 12px;
+  margin: 6px 0;
+  border-radius: 10px;
+  max-width: 80%;
+}
+
+.user {
+  background: #007bff;
+  color: white;
+  margin-left: auto;
+}
+
+.bot {
+  background: #eee;
 }
 </style>
