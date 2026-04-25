@@ -16,7 +16,6 @@
         <div class="sidebar-item" :class="{active: activeTab==='history'}" @click="openHistory">
           LỊCH SỬ GIAO DỊCH
         </div>
-
         <div class="sidebar-item" :class="{active: activeTab==='discount'}" @click="openVoucher">
           MÃ GIẢM GIÁ
         </div>
@@ -150,7 +149,8 @@
 
           <div v-if="tickets.length===0" class="no-ticket">Bạn chưa mua vé nào</div>
 
-          <div class="ticket-card" v-for="t in tickets" :key="t.id">
+          <div class="ticket-card" v-for="t in tickets" :key="t.id" @click="openTicketDetail(t)">
+>
               <div class="ticket-poster">
             <img
               :src="getPoster(t.poster)"
@@ -174,7 +174,29 @@
             <button class="delete-btn" @click="deleteTicket(t.id)">🗑</button>
           </div>
         </div>
-         <div v-if="activeTab==='member'" class="member-box">
+  <div v-if="selectedTicket" class="ticket-modal">
+  <div class="ticket-modal-box">
+
+    <h2>CHI TIẾT VÉ</h2>
+
+    <p><b>Phim:</b> {{ selectedTicket.movie }}</p>
+    <p><b>Phòng:</b> {{ selectedTicket.room }}</p>
+    <p><b>Ghế:</b> {{ selectedTicket.seat }}</p>
+    <p><b>Suất chiếu:</b> {{ selectedTicket.showtime }}</p>
+    <p><b>Giá vé:</b> {{ getFinalPrice(selectedTicket.price) }} đ</p>
+    <p><b>Trạng thái:</b> Đã thanh toán</p>
+
+    <div class="qr-big">
+      <canvas ref="detailQr"></canvas>
+    </div>
+
+    <button @click="selectedTicket = null">
+      Đóng
+    </button>
+
+  </div>
+</div>
+  <div v-if="activeTab==='member'" class="member-box">
 
   <div class="content-title">THẺ THÀNH VIÊN</div>
 
@@ -193,9 +215,10 @@
   </div>
 
   <div v-else class="member-card">
-      <div v-if="memberCard" class="level-badge" :class="memberCard.level">
-    {{ memberCard.level }}
-  </div>
+
+    <div class="level-badge" :class="memberCard.level">
+      {{ memberCard.level }}
+    </div>
 
     <h2>{{ memberCard.level }}</h2>
 
@@ -206,26 +229,31 @@
     <p>Tổng chi tiêu: {{ formatPrice(memberCard.total_spent) }}</p>
 
   </div>
-<div v-if="memberCard" class="progress-wrapper">
-  <div class="progress-bar">
-    <div class="progress-fill" :style="{ width: percent + '%' }"></div>
+
+  <div v-if="memberCard" class="progress-wrapper">
+    <div class="progress-bar">
+      <div
+        class="progress-fill"
+        :style="{ width: percent + '%' }"
+      ></div>
+    </div>
+
+    <div class="milestones">
+      <span>0</span>
+      <span>500k</span>
+      <span>1tr</span>
+      <span>2tr</span>
+    </div>
   </div>
 
-  <div class="milestones">
-    <span>0</span>
-    <span>500k</span>
-    <span>1tr</span>
-    <span>2tr</span>
-        </div>
-    </div>
- </div>
+</div>
         </div>
     </div>
 </div>
-
 </template>
 
 <script>
+import QRCode from 'qrcode'
 import defaultImg from '@/assets/tho-oi.jpg'
 import img20k from '@/assets/20k.PNG'
 import img30k from '@/assets/30k.png'
@@ -242,7 +270,8 @@ export default {
       vouchers:[],
       copiedCode:'',
       memberCode:'',
-      memberCard:null
+      memberCard:null,
+      selectedTicket: null
     }
   },
 
@@ -300,6 +329,59 @@ computed:{
   }
 },
 methods:{
+    openTicketDetail(ticket) {
+  this.selectedTicket = ticket
+
+  this.$nextTick(() => {
+    this.generateDetailQR(ticket)
+  })
+},
+    generateQR(ticket) {
+  this.$nextTick(() => {
+    let canvas = this.$refs['qr' + ticket.id]
+
+    if (Array.isArray(canvas)) {
+      canvas = canvas[0]
+    }
+
+    if (!canvas) return
+
+    QRCode.toCanvas(
+      canvas,
+      `Phim: ${ticket.movie}
+Phòng: ${ticket.room}
+Ghế: ${ticket.seat}
+Suất: ${ticket.showtime}`,
+      {
+        width: 90
+      },
+      function (error) {
+        if (error) console.error(error)
+      }
+    )
+  })
+},
+generateDetailQR(ticket) {
+  this.$nextTick(() => {
+    let canvas = this.$refs.detailQr
+
+    if (!canvas) return
+
+    QRCode.toCanvas(
+      canvas,
+      `Phim: ${ticket.movie}
+Phòng: ${ticket.room}
+Ghế: ${ticket.seat}
+Suất: ${ticket.showtime}`,
+      {
+        width: 180
+      },
+      function (error) {
+        if (error) console.error(error)
+      }
+    )
+  })
+},
   getFinalPrice(price){
     if (!this.memberCard) return price
     const discount = this.memberCard.discount || 0
@@ -476,13 +558,22 @@ async openMemberCard(){
       return img20k
     },
 
-    openHistory(){
-      this.activeTab='history'
-      const u = JSON.parse(localStorage.getItem('currentUser'))
-      fetch(`http://127.0.0.1:8000/api/tickets/${u.id}`)
-      .then(r=>r.json())
-      .then(d=>this.tickets=d)
-    },
+    openHistory() {
+  this.activeTab = 'history'
+  const u = JSON.parse(localStorage.getItem('currentUser'))
+
+  fetch(`http://127.0.0.1:8000/api/tickets/${u.id}`)
+    .then(r => r.json())
+    .then(d => {
+      this.tickets = d
+
+      this.$nextTick(() => {
+        d.forEach(ticket => {
+          this.generateQR(ticket)
+        })
+      })
+    })
+},
 
     copyCode(c){
       navigator.clipboard.writeText(c)
@@ -929,5 +1020,53 @@ textarea{
   justify-content:space-between;
   margin-top:6px;
   font-size:12px;
+}
+.ticket-modal{
+  position: fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background: rgba(0,0,0,0.5);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:999;
+}
+
+.ticket-modal-box{
+  width:450px;
+  background:white;
+  border-radius:15px;
+  padding:30px;
+  text-align:center;
+}
+
+.ticket-modal-box h2{
+  margin-bottom:20px;
+  color:#ff5a00;
+}
+
+.ticket-modal-box p{
+  margin:8px 0;
+  text-align:left;
+}
+
+.qr-big{
+  margin:20px 0;
+}
+
+.qr-big canvas{
+  width:180px;
+  height:180px;
+}
+
+.ticket-modal-box button{
+  background:#ff5a00;
+  color:white;
+  border:none;
+  padding:10px 30px;
+  border-radius:8px;
+  cursor:pointer;
 }
 </style>
