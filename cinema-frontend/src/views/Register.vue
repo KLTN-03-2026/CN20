@@ -152,7 +152,7 @@ alert("Không kết nối được server")
 
 .register-page{
 width:800px;
-margin:auto;
+margin: 50px auto;
 padding:40px;
 background:white;
  box-shadow:0 0 15px rgba(0,0,0,0.2);
@@ -175,27 +175,40 @@ background:#e71a0f;
 color:white;
 }
 
-.form-grid{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:20px;
-}
-
 .form-group{
-display:flex;
-flex-direction:column;
+  display: flex;
+  flex-direction: column;
 }
 
-input,select{
-padding:8px;
-border:1px solid #ccc;
+input:not([type="radio"]),
+select{
+  padding: 8px;
+  border: 1px solid #ccc;
+  width: 100%;
 }
 
 .radio{
-display:flex;
-gap:10px;
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  align-items: center;
 }
 
+.radio label{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 20px !important;
+}
+
+.radio input[type="radio"]{
+  margin: 0;
+  padding: 0;
+  width: 15px;
+  height: 15px;
+  border: none;
+  cursor: pointer;
+}
 .btn-register{
 margin-top:20px;
 padding:12px;

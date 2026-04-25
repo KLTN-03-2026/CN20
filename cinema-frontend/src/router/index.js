@@ -24,7 +24,6 @@ import Rooms from "../pages/admin/Phong.vue"
 import Seats from "../pages/admin/Ghe.vue"
 import Payments from "../pages/admin/Thanhtoan.vue"
 import Users from "../pages/admin/Danhsachkhachhang.vue"
-import Chatbot from "../pages/admin/Chatbot.vue"
 import Employees from "../pages/admin/Danhsachnhanvien.vue"
 import Vouchers from "../pages/admin/Magiamgia.vue"
 
@@ -119,7 +118,6 @@ children:[
 {
   path:"vouchers",name:"admin-vouchers",component: Vouchers
 },
-{ path:"chatbot", name:"admin-chatbot", component:Chatbot }
 
 ]
 }
@@ -136,11 +134,6 @@ router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth && !user) {
     return next('/login')
   }
-
-  if (to.path === '/login' && user) {
-    return next('/')
-  }
-
   next()
 })
 export default router

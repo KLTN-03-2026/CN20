@@ -77,11 +77,10 @@ export default {
   methods:{
 
     logout(){
-      localStorage.removeItem("currentUser")
-      this.user = null
-      this.$router.push("/login")
-    },
-
+  localStorage.removeItem("currentUser")
+  this.user = null
+  this.$router.push("/")
+},
     toggleDropdown(){
       this.showDropdown = !this.showDropdown
     }
