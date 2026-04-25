@@ -498,36 +498,22 @@ async openMemberCard(){
     },
 
  saveProfile() {
-  fetch('http://127.0.0.1:8000/api/update-profile', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  fetch(`http://127.0.0.1:8000/api/user/${this.user.id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify(this.user)
   })
   .then(res => res.json())
   .then(data => {
 
-    console.log('SERVER:', data)
-
-    // ✅ PHẢI LẤY TRƯỚC
     let oldUser = JSON.parse(localStorage.getItem('currentUser')) || {}
 
-    // update từng field
-    oldUser.name = data.name ?? oldUser.name
-    oldUser.gender = data.gender ?? oldUser.gender
-    oldUser.birth = data.birth ?? oldUser.birth
-    oldUser.phone = data.phone ?? oldUser.phone
-    oldUser.cmnd = data.cmnd ?? oldUser.cmnd
-    oldUser.city = data.city ?? oldUser.city
-    oldUser.district = data.district ?? oldUser.district
-    oldUser.address = data.address ?? oldUser.address
+    oldUser = { ...oldUser, ...data }
 
-    // update UI
     this.user = oldUser
-
-    // lưu lại localStorage
     localStorage.setItem('currentUser', JSON.stringify(oldUser))
-
-    this.$forceUpdate()
 
     alert('Cập nhật thành công!')
   })
