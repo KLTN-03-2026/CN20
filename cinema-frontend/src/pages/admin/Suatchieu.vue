@@ -2,7 +2,7 @@
 <div class="showtime-container">
 
   <div class="top-bar">
-    <button class="create-btn" @click="showForm = true">
+    <button class="create-btn" @click="openCreateForm">
       + Tạo Mới Suất Chiếu
     </button>
   </div>
@@ -10,7 +10,7 @@
   <div v-if="showForm" class="modal">
     <div class="modal-box">
 
-      <h3>Tạo Suất Chiếu</h3>
+      <h3>{{ editingId ? 'Sửa Suất Chiếu' : 'Tạo Suất Chiếu' }}</h3>
 
       <select v-model="newShow.movie">
   <option disabled value="">Chọn phim</option>
@@ -146,8 +146,9 @@ async mounted(){
 computed:{
   filteredShowtimes(){
 
-    const date = this.selectedDate.toISOString().split("T")[0]
-
+   const date = this.selectedDate.getFullYear() + "-" +
+  String(this.selectedDate.getMonth() + 1).padStart(2, "0") + "-" +
+  String(this.selectedDate.getDate()).padStart(2, "0")
     let shows = this.showtimes.filter(
       s => s.date.startsWith(date)
     )
@@ -162,6 +163,20 @@ computed:{
   },
 },
 methods:{
+    openCreateForm(){
+  this.showForm = true
+  this.editingId = null
+
+  this.newShow = {
+    movie: "",
+    date: "",
+    room: "",
+    start: "",
+    end: "",
+    format: "",
+    price: ""
+  }
+},
     async fetchShowtimes(){
   const res = await axios.get("http://127.0.0.1:8000/api/showtimes")
   this.showtimes = res.data
@@ -194,43 +209,65 @@ methods:{
     this.selectedRoom = room
   },
 
-async saveShowtime(){
+async saveShowtime() {
 
- const payload = {
-  movie_id: Number(this.newShow.movie),
-  date: this.newShow.date,
-  room: this.newShow.room,
-  start_time: this.newShow.start,
-  end_time: this.newShow.end,
-  format: this.newShow.format,
-  price: this.newShow.price
-}
+  const newStart = this.newShow.start
+  const newEnd = this.newShow.end
+  const newRoom = this.newShow.room
+  const newDate = this.newShow.date
 
- try{
+  // CHECK TRÙNG
+  const isConflict = this.showtimes.some(s => {
 
-   if(this.editingId){
+    if (this.editingId && s.id === this.editingId) return false
+
+    if (s.room !== newRoom) return false
+    if (!s.date.startsWith(newDate)) return false
+
+    const startA = new Date(`1970-01-01T${s.start_time}`)
+    const endA = new Date(`1970-01-01T${s.end_time}`)
+    const startB = new Date(`1970-01-01T${newStart}`)
+    const endB = new Date(`1970-01-01T${newEnd}`)
+
+    // check overlap giờ
+    return (startB < endA && endB > startA)
+  })
+
+  if (isConflict) {
+    alert("❌ Giờ chiếu và phòng đã tồn tại!")
+    return
+  }
+
+  const payload = {
+    movie_id: Number(this.newShow.movie),
+    date: this.newShow.date,
+    room: this.newShow.room,
+    start_time: this.newShow.start,
+    end_time: this.newShow.end,
+    format: this.newShow.format,
+    price: this.newShow.price
+  }
+
+  try {
+    if (this.editingId) {
       await axios.put(
         `http://127.0.0.1:8000/api/showtimes/${this.editingId}`,
         payload
       )
-   }else{
+    } else {
       await axios.post(
         "http://127.0.0.1:8000/api/showtimes",
         payload
       )
-   }
+    }
 
-   await this.fetchShowtimes()
+    await this.fetchShowtimes()
+    this.showForm = false
+    this.editingId = null
 
-   this.selectedDate = new Date(this.newShow.date)
-
-   this.showForm = false
-   this.editingId = null
-
- }catch(e){
-   console.log(e)
- }
-
+  } catch (e) {
+    console.log(e)
+  }
 },
   async deleteShow(id){
 

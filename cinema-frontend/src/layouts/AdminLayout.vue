@@ -42,7 +42,6 @@
       </div>
 
       <router-link to="/admin/payments">Quản lý thanh toán</router-link>
-      <router-link to="/admin/chatbot">Chatbot AI</router-link>
 
     </div>
 

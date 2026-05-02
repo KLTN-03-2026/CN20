@@ -40,11 +40,7 @@
 
   <div class="movie-grid">
 
-    <div
-      class="movie-card"
-      v-for="movie in visibleMovies"
-      :key="movie.id"
-      @click="goDetail(movie.slug)"
+    <div class="movie-card" v-for="movie in visibleMovies" :key="movie.id" @click="goDetail(movie.slug)"
     >
 
       <div class="image-wrapper">
@@ -159,10 +155,7 @@
         <img :src="'http://127.0.0.1:8000/storage/movies/' + selectedMovie.hinh_anh" class="showtime-poster">
 
         <div class="showtimes">
-  <div class="time-box"
-    v-for="show in filteredShowtimes"
-    :key="show.id"
-    @click="openSeat(show)"
+  <div class="time-box" v-for="show in filteredShowtimes" :key="show.id" @click="openSeat(show)"
   >
     <div class="time">
       {{ show.start_time }} - {{ show.end_time }}
@@ -178,7 +171,8 @@
 
       </div>
 
-    </div>
+      </div>
+
 
   <div v-if="showSeat" class="seat-modal">
 
@@ -222,43 +216,48 @@
 
       <div class="seat-right">
 
-        <img
-          :src="'http://127.0.0.1:8000/storage/movies/' + selectedMovie.hinh_anh"
-          class="seat-poster"
-        >
+  <img
+    :src="'http://127.0.0.1:8000/storage/movies/' + selectedMovie.hinh_anh"
+    class="seat-poster"
+  >
 
-        <p><b>Phim:</b> {{ selectedMovie.ten_phim}}</p>
-        <p><b>Ngày:</b> {{ selectedDate.day }}/{{ selectedDate.month }}/2026</p>
-        <p><b>Ghế:</b> {{ selectedSeats.join(', ') }}</p>
+  <p><b>Phim:</b> {{ selectedMovie.ten_phim }}</p>
+  <p><b>Ngày:</b> {{ selectedDate.day }}/{{ selectedDate.month }}/2026</p>
+  <p><b>Ghế:</b> {{ selectedSeats.join(', ') }}</p>
+  <p><b>Số vé:</b> {{ selectedSeats.length }}</p>
 
-        <p><b>Số vé:</b> {{ selectedSeats.length }}</p>
+  <p class="total">
+    Tổng tiền: {{ totalPrice.toLocaleString() }} VND
+  </p>
 
-        <p class="total">
-Tổng tiền: {{ totalPrice.toLocaleString() }} VND
-</p>
+  <div class="legend">
 
-        <div class="legend">
+    <div class="legend-item">
+      <span class="box booked"></span> Ghế đã đặt
+    </div>
 
-          <div class="legend-item">
-            <span class="box booked"></span> Ghế đã đặt
-          </div>
+    <div class="legend-item">
+      <span class="box selecting"></span> Ghế đang chọn
+    </div>
 
-          <div class="legend-item">
-            <span class="box selecting"></span> Ghế đang chọn
-          </div>
+    <div class="legend-item">
+      <span class="box normal"></span> Ghế thường
+    </div>
 
-          <div class="legend-item">
-            <span class="box normal"></span> Ghế thường
-          </div>
+    <div class="legend-item">
+      <span class="box vip"></span> Ghế VIP
+    </div>
 
-          <div class="legend-item">
-            <span class="box vip"></span> Ghế VIP
-          </div>
+    <div class="legend-item">
+      <span class="box couple"></span> Ghế couple
+    </div>
 
-          <div class="legend-item">
-            <span class="box couple"></span> Ghế couple
-          </div>
+  </div>
+
+
+</div>
         </div>
+
 
 <div class="coupon-box">
 
@@ -290,10 +289,6 @@ Tổng tiền: {{ totalPrice.toLocaleString() }} VND
 
     </div>
       </div>
-    </div>
-   </div>
-
-
 <div v-if="showTrailer" class="trailer-modal">
   <div class="trailer-box">
     <span class="close" @click="showTrailer=false">✖</span>
@@ -401,6 +396,7 @@ Tổng tiền: {{ totalPrice.toLocaleString() }} VND
 
     <small>{{ user.gender || 'Không rõ giới tính' }}</small>
     </div>
+
 </div>
 
      <div class="chat-box">
@@ -420,6 +416,7 @@ Tổng tiền: {{ totalPrice.toLocaleString() }} VND
 </button>
 
     </div>
+
 
   </div>
 </div>
@@ -522,7 +519,10 @@ Tổng tiền: {{ totalPrice.toLocaleString() }} VND
 
     },
   methods: {
-
+    async fetchMovie() {
+  const res = await fetch("http://127.0.0.1:8000/api/movies")
+  this.movies = await res.json()
+},
   async sendMessage() {
   if (!this.userMessage.trim()) return
 
@@ -562,8 +562,9 @@ Tổng tiền: {{ totalPrice.toLocaleString() }} VND
   this.userMessage = ""
 },
      openChatbot(){
-    this.showChatbot = true
-  },
+  this.open = false
+  this.showChatbot = true
+},
     openZalo() {
      window.open("https://oa.zalo.me/yourpageid", "_blank", "width=500,height=700")
   },
@@ -619,6 +620,7 @@ prevMovie(){
 
   openSeat(show){
   this.selectedShowtime = show
+  this.showBooking = false
   this.showSeat = true
 },
 
@@ -696,38 +698,38 @@ console.log("selectedMovie:", movie)
 
   },
 
-  generateDates(){
+  generateDates() {
+  const today = new Date()
+  this.dates = []
 
-    const today = new Date()
-    this.dates = []
+  const days = [
+    "Chủ nhật",
+    "Thứ 2",
+    "Thứ 3",
+    "Thứ 4",
+    "Thứ 5",
+    "Thứ 6",
+    "Thứ 7"
+  ]
 
-    const days = [
-      "Chủ nhật",
-      "Thứ 2",
-      "Thứ 3",
-      "Thứ 4",
-      "Thứ 5",
-      "Thứ 6",
-      "Thứ 7"
-    ]
+  for (let i = 0; i < 7; i++) {
+    const d = new Date()
+    d.setDate(today.getDate() + i)
 
-    for(let i=0;i<7;i++){
+    const year = d.getFullYear()
+    const month = String(d.getMonth() + 1).padStart(2, "0")
+    const day = String(d.getDate()).padStart(2, "0")
 
-      const d = new Date()
-      d.setDate(today.getDate() + i)
+    this.dates.push({
+      dayName: days[d.getDay()],
+      day: d.getDate(),
+      month: d.getMonth() + 1,
+      fullDate: `${year}-${month}-${day}`
+    })
+  }
 
-      this.dates.push({
-        dayName: days[d.getDay()],
-        day: d.getDate(),
-        month: d.getMonth() + 1,
-        fullDate: d.toISOString().split("T")[0]
-      })
-
-    }
-
-    this.selectedDate = this.dates[0]
-
-  },
+  this.selectedDate = this.dates[0]
+},
 
  async continueBooking() {
   if (!this.selectedShowtime) {
@@ -810,7 +812,6 @@ goCouponPage(){
   },
 
 mounted() {
-
   const saved = localStorage.getItem("chat_history")
 
   if (saved) {
@@ -1353,11 +1354,11 @@ watch: {
   }
 
   .showtimes{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:15px;
-  margin-left:30px;
-  }
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  margin-left: 30px;
+}
   .showtime-poster{
   width:100px;
   aspect-ratio: 2/3;
@@ -2209,5 +2210,20 @@ textarea {
 .bot {
   background: #eee;
 }
+.stars span {
+  font-size: 30px;
+  cursor: pointer;
+  color: #ccc;
+}
 
+.stars span.active {
+  color: gold;
+}
+
+.review-item {
+  background: #f5f5f5;
+  padding: 15px;
+  border-radius: 10px;
+  margin-top: 15px;
+}
 </style>

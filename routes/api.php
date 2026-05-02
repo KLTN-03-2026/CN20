@@ -15,7 +15,7 @@ use App\Http\Controllers\ShowtimeController;
 use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MemberCardController;
-
+use App\Http\Controllers\ReviewController;
 
 Route::get('/movies', [MovieController::class, 'index']);
 Route::post('/movies', [MovieController::class, 'store']);
@@ -58,6 +58,8 @@ Route::get('/admin/dashboard', [DashboardController::class, 'dashboard']);
 Route::post('/link-member-card',[MemberCardController::class,'linkCard']);
 Route::get('/member-card/{userId}',[MemberCardController::class,'getCard']);
 Route::post('/member/update', [AuthController::class, 'updateMember']);
+Route::get('/reviews/{movieId}', [ReviewController::class, 'index']);
+Route::post('/reviews', [ReviewController::class, 'store']);
 Route::prefix('admin')->group(function () {
 
 

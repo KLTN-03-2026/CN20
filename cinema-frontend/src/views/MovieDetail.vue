@@ -45,16 +45,46 @@
           ></iframe>
         </div>
 
-        <div v-if="tab === 'review'">
-          <p>Chưa có đánh giá nào cho phim này.</p>
-        </div>
-      </div>
+        <div v-if="tab === 'review'" class="review-section">
+  <h2>Đánh giá phim</h2>
 
-      <div class="bottom">
-        <button class="btn-book">ĐẶT VÉ</button>
-      </div>
+  <div class="review-form">
+    <div class="stars">
+      <span
+        v-for="star in 5"
+        :key="star"
+        @click="rating = star"
+        :class="{ active: rating >= star }"
+      >
+        ★
+      </span>
+    </div>
+
+    <textarea
+      v-model="comment"
+      placeholder="Nhập đánh giá của bạn..."
+    ></textarea>
+
+    <button @click="submitReview">
+      Gửi đánh giá
+    </button>
+  </div>
+
+  <div class="review-list">
+    <div
+      class="review-item"
+      v-for="review in reviews"
+      :key="review.id"
+    >
+      <h4>{{ review.user_name }}</h4>
+      <p>{{ '★'.repeat(review.rating) }}</p>
+      <p>{{ review.comment }}</p>
     </div>
   </div>
+</div>
+</div>
+</div>
+</div>
 </template>
 
 <script>
@@ -62,19 +92,69 @@ export default {
   data() {
     return {
       movie: {},
-      tab: "detail"
+      tab: "detail",
+    reviews: [],
+    rating: 0,
+    comment: ""
     }
   },
+  methods: {
+  async fetchReviews() {
+    if (!this.movie.id) return
+
+    const res = await fetch(
+      `http://127.0.0.1:8000/api/reviews/${this.movie.id}`
+    )
+
+    this.reviews = await res.json()
+  },
+
+  async submitReview() {
+    if (!this.rating || !this.comment) {
+      alert("Vui lòng nhập đầy đủ đánh giá")
+      return
+    }
+
+    const user = JSON.parse(localStorage.getItem("currentUser"))
+
+    const res = await fetch(
+      "http://127.0.0.1:8000/api/reviews",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          movie_id: this.movie.id,
+          user_name: user?.name || "Khách",
+          rating: this.rating,
+          comment: this.comment
+        })
+      }
+    )
+
+    const data = await res.json()
+
+    this.reviews.unshift(data.review)
+
+    this.rating = 0
+    this.comment = ""
+
+    alert("Đánh giá thành công")
+  }
+},
 
   mounted() {
-    const slug = this.$route.params.slug;
-    fetch("http://127.0.0.1:8000/api/movies/" + slug)
-      .then(res => res.json())
-      .then(data => {
-        this.movie = data;
-      })
-      .catch(err => console.error("Lỗi khi tải dữ liệu:", err));
-  }
+  const slug = this.$route.params.slug;
+
+  fetch("http://127.0.0.1:8000/api/movies/" + slug)
+    .then(res => res.json())
+    .then(data => {
+      this.movie = data
+      this.fetchReviews()
+    })
+    .catch(err => console.error(err))
+}
 }
 </script>
 
@@ -183,5 +263,127 @@ export default {
 .btn-book:hover {
   transform: scale(1.05);
   background: #162e4a;
+}
+.review-section {
+  margin-top: 20px;
+  background: #ffffff;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+}
+
+.review-section h2 {
+  margin-bottom: 25px;
+  font-size: 26px;
+  color: #222;
+  text-align: center;
+  font-weight: 700;
+}
+
+.review-form {
+  background: #f8fafc;
+  padding: 25px;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 30px;
+}
+
+.stars {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.stars span {
+  font-size: 32px;
+  cursor: pointer;
+  color: #ccc;
+  border: none;
+  outline: none;
+  background: none;
+  box-shadow: none;
+  user-select: none;
+  transition: 0.2s;
+}
+
+.stars span.active {
+  color: gold;       
+}
+
+.stars span:hover {
+  transform: scale(1.1);
+}
+.review-form textarea {
+  width: 100%;
+  min-height: 120px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  padding: 15px;
+  font-size: 15px;
+  resize: none;
+  outline: none;
+  transition: 0.3s;
+  background: white;
+  box-sizing: border-box;
+}
+
+.review-form textarea:focus {
+  border-color: #ff6600;
+  box-shadow: 0 0 0 4px rgba(255,102,0,0.08);
+}
+
+.review-form button {
+  margin-top: 18px;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ff6600, #ff8533);
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.review-form button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255,102,0,0.25);
+}
+
+.review-list {
+  margin-top: 20px;
+}
+
+.review-item {
+  background: #ffffff;
+  border: 1px solid #eeeeee;
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 18px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+  transition: 0.2s;
+}
+
+.review-item:hover {
+  transform: translateY(-2px);
+}
+
+.review-item h4 {
+  margin: 0 0 10px;
+  font-size: 17px;
+  color: #111827;
+  font-weight: 700;
+}
+
+.review-item p {
+  margin: 6px 0;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.review-item p:nth-child(2) {
+  color: #f59e0b;
+  font-size: 18px;
 }
 </style>
