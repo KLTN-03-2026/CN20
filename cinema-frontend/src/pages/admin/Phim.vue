@@ -241,34 +241,40 @@ return "https://www.youtube.com/embed/"+videoId
 
 loadMovies(){
 fetch("http://127.0.0.1:8000/api/admin/movies")
-.then(res=>res.json())
-.then(data=>{
-this.movies=data
+.then(async res=>{
+  const data = await res.json()
+  console.log("DATA:", data)
+
+  if(!res.ok){
+    alert("Lỗi load dữ liệu")
+    return
+  }
+
+  this.movies = data.data || data
 })
 },
-
 openAdd(){
-this.isEdit=false
+  this.isEdit=false
 
-this.movie={
-ten_phim:'',
-slug:'',
-dien_vien:'',
-ngay_chieu:'',
-thoi_luong:'',
-dao_dien:'',
-nha_san_xuat:'',
-the_loai:'',
-gioi_han_do_tuoi:'',
-hinh_anh:'',
-trailer:'',
-ngon_ngu:'',
-chi_tiet:'',
-tinh_trang:'',
-active:1
-}
+  this.movie={
+    ten_phim:'',
+    slug:'',
+    dien_vien:'',
+    ngay_chieu: new Date().toISOString().split('T')[0], // ✅ FIX
+    thoi_luong:'',
+    dao_dien:'',
+    nha_san_xuat:'',
+    the_loai:'',
+    gioi_han_do_tuoi:'',
+    hinh_anh:'',
+    trailer:'',
+    ngon_ngu:'',
+    chi_tiet:'',
+    tinh_trang:'dangchieu',
+    active:1
+  }
 
-this.showForm=true
+  this.showForm=true
 },
 
 openEdit(movie){
@@ -281,40 +287,59 @@ closeForm(){
 this.showForm=false
 },
 
-saveMovie(){
+async saveMovie(){
+  try{
 
-if(this.isEdit){
+    let url = "http://127.0.0.1:8000/api/admin/movies"
+    let method = "POST"
 
-fetch("http://127.0.0.1:8000/api/admin/movies/"+this.movie.id,{
-method:"PUT",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify(this.movie)
-})
-.then(()=>{
-alert("Cập nhật thành công")
-this.loadMovies()
-this.showForm=false
-})
+    if(this.isEdit){
+      url += "/" + this.movie.id
+      method = "PUT"
+    }
 
-}else{
+    const payload = { ...this.movie }
 
-fetch("http://127.0.0.1:8000/api/admin/movies",{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify(this.movie)
-})
-.then(()=>{
-alert("Thêm phim thành công")
-this.loadMovies()
-this.showForm=false
-})
+    // ✅ FIX FORMAT NGÀY
+    if(payload.ngay_chieu){
+      payload.ngay_chieu = new Date(payload.ngay_chieu).toISOString().split('T')[0]
+    }
 
-}
+    const res = await fetch(url,{
+      method: method,
+      headers:{
+        "Content-Type":"application/json",
+        "Accept":"application/json"
+      },
+      body: JSON.stringify(payload)
+    })
 
+    // ✅ FIX: đọc raw để thấy lỗi thật
+    const text = await res.text()
+    console.log("RAW:", text)
+
+    let data
+    try{
+      data = JSON.parse(text)
+    }catch{
+      data = { message: text }
+    }
+
+    console.log("PARSED:", data)
+
+    if(!res.ok){
+      alert("Lỗi: " + (data.message || "Server lỗi"))
+      return
+    }
+
+    alert(this.isEdit ? "Cập nhật thành công" : "Thêm thành công")
+    this.loadMovies()
+    this.showForm=false
+
+  }catch(err){
+    console.error("FETCH ERROR:", err)
+    alert("Lỗi kết nối server")
+  }
 },
 
 deleteMovie(id){

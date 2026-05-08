@@ -40,8 +40,8 @@
 
   <div class="movie-grid">
 
-    <div class="movie-card" v-for="movie in visibleMovies" :key="movie.id" @click="goDetail(movie.slug)"
-    >
+    <div class="movie-card" v-for="movie in visibleMovies" :key="movie.id"
+    @click="goDetail(movie.slug)" > //trang chi tiet
 
       <div class="image-wrapper">
         <img :src="'http://127.0.0.1:8000/storage/movies/' + movie.hinh_anh" />
@@ -197,14 +197,14 @@
           :key="row+n"
           class="seat"
           :class="[
-            bookedSeats.includes(row+n) ? 'booked' : '',
-            selectedSeats.includes(row+n) ? 'active' : '',
+            bookedSeats.includes(row+n) ? 'booked' : '', // ghế đã đặt
+            selectedSeats.includes(row+n) ? 'active' : '', // ghế đang chọn
             row==='H' ? 'couple' : '',
             (row==='D'||row==='E'||row==='F'||row==='G') ? 'vip' : '',
             (row==='A'||row==='B'||row==='C') ? 'normal' : ''
           ]"
           @click="!bookedSeats.includes(row+n) && toggleSeat(row+n)"
-        >
+        > // chọn ghế nếu ghế chưa bị đặt
           {{ row+n }}
             </div>
 
@@ -251,12 +251,7 @@
     <div class="legend-item">
       <span class="box couple"></span> Ghế couple
     </div>
-
-  </div>
-
-
 </div>
-        </div>
 
 
 <div class="coupon-box">
@@ -288,6 +283,10 @@
       </button>
 
     </div>
+  </div>
+
+</div>
+
       </div>
 <div v-if="showTrailer" class="trailer-modal">
   <div class="trailer-box">
@@ -670,6 +669,7 @@ console.log("selectedMovie:", movie)
     this.showBooking = true
 
   },
+  //chọn ghế
   toggleSeat(seat){
 
     if(this.selectedSeats.includes(seat)){

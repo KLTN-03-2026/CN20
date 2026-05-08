@@ -3,210 +3,180 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 use App\Models\Movie;
 use App\Models\Showtime;
+use Illuminate\Support\Facades\Session;
 
 class ChatbotController extends Controller
 {
     public function chat(Request $request)
     {
         $userMessage = $request->message;
+        $lowerMessage = mb_strtolower($userMessage);
 
         try {
 
-            $lowerMessage = mb_strtolower($userMessage);
+            if (str_contains($lowerMessage, 'sắp chiếu') || str_contains($lowerMessage, 'sap chieu')) {
 
-            $cleanMessage = mb_strtolower(
-                preg_replace('/[^\p{L}\p{N}\s]/u', '', $userMessage)
-            );
-
-            /*
-            ======================================================
-            0. MATCH PHIM (PHẢI ĐẶT TRÊN CÙNG)
-            ======================================================
-            */
-            $movieMatch = Movie::where('tinh_trang', 'dangchieu')
-    ->get()
-    ->first(function ($movie) use ($cleanMessage) {
-
-        $movieName = mb_strtolower(
-            preg_replace('/[^\p{L}\p{N}\s]/u', '', $movie->ten_phim)
-        );
-
-        $words = explode(' ', $movieName);
-
-        foreach ($words as $word) {
-            if (strlen($word) > 2 && str_contains($cleanMessage, $word)) {
-                return true;
-            }
-        }
-
-        return false;
-    });
-            /*
-            ======================================================
-            1. GIÁ VÉ
-            ======================================================
-            */
-            if (str_contains($lowerMessage, 'giá') || str_contains($lowerMessage, 'vé')) {
-
-                // tìm phòng nếu người dùng có nhắc "phòng 1 / phòng 2 / phòng 3"
-                $room = null;
-
-                if (preg_match('/phòng\s*\d+/u', $lowerMessage, $matches)) {
-                    $room = trim($matches[0]);
-                }
-
-                $query = Showtime::query();
-
-                if ($movieMatch) {
-                    $query->where('movie_id', $movieMatch->id);
-                }
-
-                if ($room) {
-                    $query->where('room', 'like', "%$room%");
-                }
-
-                $showtime = $query->orderBy('price', 'desc')->first();
-
-                if (!$showtime) {
-                    return response()->json([
-                        "reply" => "Không có dữ liệu giá vé"
-                    ]);
-                }
-
-                $basePrice = $showtime->price;
-
-                $a_c = $basePrice;
-                $d_g = $basePrice + 25000;
-                $h = $basePrice + 40000;
+                $movies = Movie::where('tinh_trang', 'sapchieu')->pluck('ten_phim');
 
                 return response()->json([
-                    "reply" =>
-            "Giá vé:
-            - Ghế A-C: " . number_format($a_c) . "đ
-            - Ghế D-G: " . number_format($d_g) . "đ (+25,000đ)
-            - Ghế H: " . number_format($h) . "đ (+40,000đ)"
+                    "reply" => $movies->isEmpty()
+                        ? "Hiện chưa có phim sắp chiếu"
+                        : "Phim sắp chiếu: " . $movies->implode(', ')
                 ]);
             }
 
-            /*
-            ======================================================
-            2. PHIM THEO THỂ LOẠI
-            ======================================================
-            */
-           if (
-    str_contains($lowerMessage, 'thể loại') ||
-    str_contains($lowerMessage, 'hành động') ||
-    str_contains($lowerMessage, 'hài') ||
-    str_contains($lowerMessage, 'tình cảm') ||
-    str_contains($lowerMessage, 'gia đình') ||
-    str_contains($lowerMessage, 'tâm lý')
-) {
+            $movieMatch = Movie::whereIn('tinh_trang', ['dangchieu', 'sapchieu'])
+                ->get()
+                ->first(function ($movie) use ($lowerMessage) {
 
-                $keyword = null;
+                    $name = mb_strtolower(
+                        preg_replace('/[^\p{L}\p{N}\s]/u', '', $movie->ten_phim)
+                    );
 
-                $movies = Movie::where('tinh_trang', 'dangchieu')->get();
+                    return str_contains($lowerMessage, $name);
+                });
 
-                foreach ($movies as $movie) {
-                    $genres = array_map('trim', explode(',', mb_strtolower($movie->the_loai)));
-
-                    foreach ($genres as $g) {
-                        if (str_contains($lowerMessage, $g)) {
-                            $keyword = $g;
-                            break 2;
-                        }
-                    }
-                }
-
-                if (!$keyword) {
-                    return response()->json([
-                        "reply" => "Các phim đang chiếu: " . $movies->pluck('ten_phim')->implode(', ')
-                    ]);
-                }
-
-                $result = $movies->filter(function ($movie) use ($keyword) {
-                    $genres = array_map('trim', explode(',', mb_strtolower($movie->the_loai)));
-                    return in_array($keyword, $genres);
-                })->pluck('ten_phim');
-
-                return response()->json([
-                    "reply" => "Phim thể loại $keyword: " . $result->implode(', ')
-                ]);
-            }
-
-            /*
-            ======================================================
-            3. SUẤT CHIẾU
-            ======================================================
-            */
-            if ($movieMatch &&
-    (
-        str_contains($lowerMessage, 'thông tin') ||
-        str_contains($lowerMessage, 'độ tuổi') ||
-        str_contains($lowerMessage, 'giới hạn')
-    )
-) {
-
-    return response()->json([
-    "reply" =>
-    "Tên phim: " . $movieMatch->ten_phim . "\n" .
-    "Thể loại: " . $movieMatch->the_loai . "\n" .
-    "Thời lượng: " . $movieMatch->thoi_luong . " phút\n" .
-    "Ngày chiếu: " . $movieMatch->ngay_chieu . "\n" .
-    "Giới hạn độ tuổi: " . $movieMatch->gioi_han_do_tuoi
-]);
-}
             if ($movieMatch) {
 
-                $showtimes = Showtime::where('movie_id', $movieMatch->id)
-                ->whereDate('date', '>=', now()->toDateString())
-                ->orderBy('date', 'asc')
-                ->orderBy('start_time', 'asc')
-                ->get();
+                Session::forget('last_showtime_ids');
+                Session::forget('last_room');
 
-                if ($showtimes->isEmpty()) {
+                Session::put('last_movie_id', $movieMatch->id);
+            }
+
+            $movie = null;
+
+            if (Session::has('last_movie_id')) {
+                $movie = Movie::find(Session::get('last_movie_id'));
+            }
+
+            $room = null;
+            $roomShowtimes = collect();
+
+            if (preg_match('/phòng\s*(\d+)/iu', $lowerMessage, $m)) {
+                $room = 'Phòng ' . $m[1];
+                Session::put('last_room', $room);
+            } elseif (Session::has('last_room')) {
+                $room = Session::get('last_room');
+            }
+
+            if (
+                str_contains($lowerMessage, 'suất') ||
+                str_contains($lowerMessage, 'chiếu') ||
+                str_contains($lowerMessage, 'mấy giờ')
+            ) {
+
+                if (!$movie) {
                     return response()->json([
-                        "reply" => "Phim này chưa có lịch chiếu"
+                        "reply" => "Bạn hãy nhập tên phim trước"
                     ]);
                 }
 
-                $showtimesText = $showtimes->map(function ($s) {
+                $today = now()->toDateString();
 
-                    $start = date('H:i', strtotime($s->start_time));
-                    $end = date('H:i', strtotime($s->end_time));
+            $showtimes = Showtime::where('movie_id', $movie->id)
+                ->whereDate('date', $today)
+                ->orderBy('start_time')
+                ->get()
+                ->values();
 
-                    return $s->date . " | " . $start . "-" . $end . " | " . $s->room;
-                })->implode("\n");
-
-                return response()->json([
-                    "reply" => $movieMatch->ten_phim . " có suất chiếu:\n" . $showtimesText
+            Session::put('last_showtime_ids', $showtimes->pluck('id')->toArray());
+                    return response()->json([
+                    "reply" => $movie->ten_phim . " suất chiếu hôm nay:\n\n" .
+                        $showtimes->map(function ($s) {
+                            return "⏰ " .
+                                date('H:i', strtotime($s->start_time)) .
+                                "-" .
+                                date('H:i', strtotime($s->end_time)) .
+                                " | " . $s->room;
+                        })->implode("\n")
                 ]);
             }
 
-            /*
-            ======================================================
-            4. PHIM ĐANG CHIẾU
-            ======================================================
-            */
-            if (str_contains($lowerMessage, 'phim') &&
-                str_contains($lowerMessage, 'chiếu')) {
+        if (str_contains($lowerMessage, 'giá') || str_contains($lowerMessage, 'vé')) {
 
-                $movies = Movie::where('tinh_trang', 'dangchieu')
-                    ->pluck('ten_phim')
-                    ->implode(', ');
+
+    if (!$movie && $room) {
+
+        $showtime = Showtime::where('room', $room)
+            ->latest()
+            ->first();
+
+        if ($showtime) {
+            $movie = Movie::find($showtime->movie_id);
+            Session::put('last_movie_id', $movie->id);
+        }
+    }
+
+    if (!$movie && Session::has('last_showtime_ids')) {
+
+        $showtime = Showtime::whereIn('id', Session::get('last_showtime_ids'))
+            ->latest()
+            ->first();
+
+        if ($showtime) {
+            $movie = Movie::find($showtime->movie_id);
+            Session::put('last_movie_id', $movie->id);
+        }
+    }
+
+    if (!$movie) {
+        return response()->json([
+            "reply" => "Bạn cần chọn phim hoặc hỏi suất chiếu trước khi xem giá vé"
+        ]);
+    }
+
+    $showtimes = Showtime::where('movie_id', $movie->id)
+        ->when($room, function ($q) use ($room) {
+            $q->where('room', $room);
+        })
+        ->orderBy('start_time')
+        ->get()
+        ->unique(function ($s) {
+            return $s->start_time . '-' . $s->room;
+        })
+        ->values();
+
+    if ($showtimes->isEmpty()) {
+        return response()->json([
+            "reply" => "Không tìm thấy suất chiếu"
+        ]);
+    }
+
+    $reply = "🎬 Giá vé phim " . $movie->ten_phim . " - " . ($room ?? "tất cả phòng") . "\n";
+    $reply .= str_repeat("─", 20) . "\n\n";
+
+    $reply .= $showtimes->map(function ($s) {
+
+        $time = date('H:i', strtotime($s->start_time)) .
+                "-" .
+                date('H:i', strtotime($s->end_time));
+
+        return
+            "🕒 $time | " . $s->room . "\n" .
+            "💺 A-C: " . number_format($s->price) . "đ | " .
+            "D-G: " . number_format($s->price + 25000) . "đ | " .
+            "H: " . number_format($s->price + 40000) . "đ\n" .
+            str_repeat("─", 20);
+
+    })->implode("\n\n");
+
+    return response()->json([
+        "reply" => $reply
+    ]);
+}
+         
+            if (str_contains($lowerMessage, 'phim') && str_contains($lowerMessage, 'chiếu')) {
+
+                $movies = Movie::where('tinh_trang', 'dangchieu')->pluck('ten_phim');
 
                 return response()->json([
-                    "reply" => "Phim đang chiếu: " . $movies
+                    "reply" => "Phim đang chiếu: " . $movies->implode(', ')
                 ]);
             }
 
-            /*
-            ======================================================
-            5. FALLBACK
-            ======================================================
-            */
             return response()->json([
                 "reply" => "Không tìm thấy thông tin"
             ]);
