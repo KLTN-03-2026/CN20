@@ -203,8 +203,8 @@
             (row==='D'||row==='E'||row==='F'||row==='G') ? 'vip' : '',
             (row==='A'||row==='B'||row==='C') ? 'normal' : ''
           ]"
-          @click="!bookedSeats.includes(row+n) && toggleSeat(row+n)"
-        > // chọn ghế nếu ghế chưa bị đặt
+          @click="!bookedSeats.includes(row+n) && toggleSeat(row+n)" 
+        >
           {{ row+n }}
             </div>
 
